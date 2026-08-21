@@ -21,7 +21,7 @@ function combineMigrations(migrationsDir, outputFile, isStore = false) {
     const filePath = path.join(migrationsDir, file);
     let content = fs.readFileSync(filePath, 'utf8');
 
-    // Safely wrap cron.unschedule
+    // Safely wrap cron.unschedule using replacement function to preserve literal $$
     content = content.replace(
       /SELECT\s+cron\.unschedule\('([^']+)'\);/g,
       (match, p1) => `DO $$ BEGIN PERFORM cron.unschedule('${p1}'); EXCEPTION WHEN OTHERS THEN NULL; END $$;`
@@ -32,16 +32,18 @@ function combineMigrations(migrationsDir, outputFile, isStore = false) {
     );
 
     // Remove plain ASSERT statements that assume existing test data
-    content = content.replace(/^\s*ASSERT\s+[^;]+;/gm, '-- ASSERT skipped for fresh database initialization');
+    content = content.replace(/^\s*ASSERT\s+[^;]+;/gm, () => '-- ASSERT skipped for fresh database initialization');
 
     if (isStore) {
       // Handle profiles table collision if profiles already exists from main app
+      // Using replacement function () => ... so literal $$ is never turned into single $
       content = content.replace(
         /CREATE TABLE public\.profiles \([\s\S]*?\);\n/g,
-        `-- Profiles table already created by main platform; ensuring additional store columns exist:
+        () => `-- Profiles table already created by main platform; ensuring additional store columns exist:
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
-DO $$ BEGIN
+DO $$
+BEGIN
   ALTER TABLE public.profiles ADD CONSTRAINT profiles_user_id_key UNIQUE (user_id);
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
@@ -49,9 +51,9 @@ END $$;
       );
 
       // Make all CREATE TABLE safe with IF NOT EXISTS
-      content = content.replace(/CREATE TABLE public\.(\w+)/g, 'CREATE TABLE IF NOT EXISTS public.$1');
+      content = content.replace(/CREATE TABLE public\.(\w+)/g, (m, p1) => `CREATE TABLE IF NOT EXISTS public.${p1}`);
 
-      // Make CREATE TYPE safe
+      // Make CREATE TYPE safe using replacement function
       content = content.replace(
         /CREATE TYPE public\.(\w+) AS ENUM \(([^)]+)\);/g,
         (match, name, values) => `DO $$ BEGIN CREATE TYPE public.${name} AS ENUM (${values}); EXCEPTION WHEN duplicate_object THEN NULL; END $$;`

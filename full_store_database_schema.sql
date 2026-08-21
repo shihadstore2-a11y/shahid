@@ -294,10 +294,11 @@ CREATE TRIGGER trg_orders_touch BEFORE UPDATE ON public.orders
 -- Profiles table already created by main platform; ensuring additional store columns exist:
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
-DO $ BEGIN
+DO $$
+BEGIN
   ALTER TABLE public.profiles ADD CONSTRAINT profiles_user_id_key UNIQUE (user_id);
 EXCEPTION WHEN OTHERS THEN NULL;
-END $;
+END $$;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
