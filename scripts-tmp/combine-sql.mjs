@@ -9,7 +9,12 @@ function combineMigrations(migrationsDir, outputFile, isStore = false) {
   let combinedSql = `-- Consolidated Supabase Schema Migration Script\n-- Generated for fresh Supabase database initialization\n\n`;
 
   for (const file of files) {
-    if (file.includes('aeb6992c-e209-445a-8142-f4313c12f14e')) {
+    // Skip QA test assertion migration files and historical test-data cleanup assertion files
+    if (
+      file.includes('aeb6992c-e209-445a-8142-f4313c12f14e') || 
+      file.includes('8e1742a4-7a12-46a1-b9bb-8f1576d96d81')
+    ) {
+      console.log(`Skipping test/data-cleanup migration file: ${file}`);
       continue;
     }
 
