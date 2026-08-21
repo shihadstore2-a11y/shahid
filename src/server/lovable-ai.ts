@@ -47,12 +47,29 @@ function wait(ms: number) {
 }
 
 async function postChatCompletion(body: Record<string, unknown>, attempt = 0): Promise<any> {
-  const apiKey = process.env.LOVABLE_API_KEY;
+  const lovableKey = process.env.LOVABLE_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  
+  const apiKey = openaiKey || lovableKey;
+  const gatewayUrl = openaiKey 
+    ? "https://api.openai.com/v1/chat/completions"
+    : GATEWAY_URL;
+
   if (!apiKey) {
-    throw new AIError("LOVABLE_API_KEY is not configured", 500, "unknown");
+    // Return graceful mock response when no AI API key is configured
+    return {
+      choices: [
+        {
+          message: {
+            content: "تم توليد هذا النص التجريبي المجاني. لإضافة توليد الذكاء الاصطناعي الحي، قم بإضافة مفتاح OPENAI_API_KEY أو LOVABLE_API_KEY في إعدادات البيئة (Free Tier).",
+          },
+        },
+      ],
+      usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+    };
   }
 
-  const res = await fetch(GATEWAY_URL, {
+  const res = await fetch(gatewayUrl, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -60,6 +77,7 @@ async function postChatCompletion(body: Record<string, unknown>, attempt = 0): P
     },
     body: JSON.stringify(body),
   });
+
 
   if (res.status === 429) {
     if (attempt < 2) {

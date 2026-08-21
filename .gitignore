@@ -31,3 +31,8 @@ dist-ssr
 *.sln
 *.sw?
 .env.test
+
+# Nested Store Project & Archives
+shahid-store-main/
+*.zip
+
