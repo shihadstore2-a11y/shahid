@@ -332,8 +332,8 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 
@@ -1351,25 +1351,25 @@ ON CONFLICT (id) DO UPDATE
       allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 -- Public read for product images
-CREATE POLICY "product_images_public_read"
-ON storage.objects FOR SELECT
+DROP POLICY IF EXISTS "product_images_public_read" ON storage.objects;
+CREATE POLICY "product_images_public_read" ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'product-images');
 
 -- Admin write/update/delete only
-CREATE POLICY "product_images_admin_insert"
-ON storage.objects FOR INSERT
+DROP POLICY IF EXISTS "product_images_admin_insert" ON storage.objects;
+CREATE POLICY "product_images_admin_insert" ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (bucket_id = 'product-images' AND public.is_admin(auth.uid()));
 
-CREATE POLICY "product_images_admin_update"
-ON storage.objects FOR UPDATE
+DROP POLICY IF EXISTS "product_images_admin_update" ON storage.objects;
+CREATE POLICY "product_images_admin_update" ON storage.objects FOR UPDATE
 TO authenticated
 USING (bucket_id = 'product-images' AND public.is_admin(auth.uid()))
 WITH CHECK (bucket_id = 'product-images' AND public.is_admin(auth.uid()));
 
-CREATE POLICY "product_images_admin_delete"
-ON storage.objects FOR DELETE
+DROP POLICY IF EXISTS "product_images_admin_delete" ON storage.objects;
+CREATE POLICY "product_images_admin_delete" ON storage.objects FOR DELETE
 TO authenticated
 USING (bucket_id = 'product-images' AND public.is_admin(auth.uid()));
 
@@ -1442,13 +1442,13 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('activation-step-images', 'activation-step-images', true)
 ON CONFLICT (id) DO NOTHING;
 
-CREATE POLICY "activation_images_public_read"
-ON storage.objects
+DROP POLICY IF EXISTS "activation_images_public_read" ON storage.objects;
+CREATE POLICY "activation_images_public_read" ON storage.objects
 FOR SELECT
 USING (bucket_id = 'activation-step-images');
 
-CREATE POLICY "activation_images_admin_insert"
-ON storage.objects
+DROP POLICY IF EXISTS "activation_images_admin_insert" ON storage.objects;
+CREATE POLICY "activation_images_admin_insert" ON storage.objects
 FOR INSERT
 TO authenticated
 WITH CHECK (
@@ -1456,8 +1456,8 @@ WITH CHECK (
   AND public.is_admin(auth.uid())
 );
 
-CREATE POLICY "activation_images_admin_update"
-ON storage.objects
+DROP POLICY IF EXISTS "activation_images_admin_update" ON storage.objects;
+CREATE POLICY "activation_images_admin_update" ON storage.objects
 FOR UPDATE
 TO authenticated
 USING (
@@ -1469,8 +1469,8 @@ WITH CHECK (
   AND public.is_admin(auth.uid())
 );
 
-CREATE POLICY "activation_images_admin_delete"
-ON storage.objects
+DROP POLICY IF EXISTS "activation_images_admin_delete" ON storage.objects;
+CREATE POLICY "activation_images_admin_delete" ON storage.objects
 FOR DELETE
 TO authenticated
 USING (
@@ -1850,7 +1850,7 @@ ON CONFLICT (user_id) DO NOTHING;
 
 -- PART 3: Attach Trigger on auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP TRIGGER IF EXISTS on_auth_user_created ON public.profiles;
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();

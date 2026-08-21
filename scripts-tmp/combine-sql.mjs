@@ -45,16 +45,16 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES aut
         (match, name, values) => `DO $$ BEGIN CREATE TYPE public.${name} AS ENUM (${values}); EXCEPTION WHEN duplicate_object THEN NULL; END $$;`
       );
 
-      // Make CREATE POLICY safe with preceding DROP POLICY IF EXISTS
+      // Make CREATE POLICY safe with preceding DROP POLICY IF EXISTS on any schema
       content = content.replace(
-        /CREATE POLICY "([^"]+)"\s+ON\s+public\.(\w+)/g,
-        (match, policyName, tableName) => `DROP POLICY IF EXISTS "${policyName}" ON public.${tableName};\nCREATE POLICY "${policyName}" ON public.${tableName}`
+        /CREATE POLICY\s+"([^"]+)"\s+ON\s+([a-zA-Z0-9_.]+)/g,
+        (match, policyName, tableName) => `DROP POLICY IF EXISTS "${policyName}" ON ${tableName};\nCREATE POLICY "${policyName}" ON ${tableName}`
       );
 
-      // Make CREATE TRIGGER safe with preceding DROP TRIGGER IF EXISTS
+      // Make CREATE TRIGGER safe with preceding DROP TRIGGER IF EXISTS on any schema (including auth.users)
       content = content.replace(
-        /CREATE TRIGGER\s+(\w+)\s+([\s\S]*?)\s+ON\s+public\.(\w+)/g,
-        (match, triggerName, timing, tableName) => `DROP TRIGGER IF EXISTS ${triggerName} ON public.${tableName};\nCREATE TRIGGER ${triggerName} ${timing} ON public.${tableName}`
+        /CREATE TRIGGER\s+([a-zA-Z0-9_]+)\s+([\s\S]*?)\s+ON\s+([a-zA-Z0-9_.]+)/g,
+        (match, triggerName, timing, tableName) => `DROP TRIGGER IF EXISTS ${triggerName} ON ${tableName};\nCREATE TRIGGER ${triggerName} ${timing} ON ${tableName}`
       );
     }
 
