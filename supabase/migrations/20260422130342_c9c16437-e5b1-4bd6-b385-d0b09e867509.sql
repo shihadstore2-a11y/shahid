@@ -1,0 +1,11 @@
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS brand_personality TEXT,
+ADD COLUMN IF NOT EXISTS unique_selling_point TEXT,
+ADD COLUMN IF NOT EXISTS banned_phrases TEXT[] NOT NULL DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS shipping_policy TEXT,
+ADD COLUMN IF NOT EXISTS exchange_policy TEXT,
+ADD COLUMN IF NOT EXISTS faq_notes TEXT,
+ADD COLUMN IF NOT EXISTS high_margin_products TEXT[] NOT NULL DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS cta_style TEXT,
+ADD COLUMN IF NOT EXISTS seasonal_priorities TEXT[] NOT NULL DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS compliance_notes TEXT;

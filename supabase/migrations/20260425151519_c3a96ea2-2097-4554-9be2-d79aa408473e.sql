@@ -1,0 +1,3 @@
+DROP TRIGGER IF EXISTS update_dlq_alert_state_updated_at ON public.dlq_alert_state;
+DROP TRIGGER IF EXISTS update_email_send_state_updated_at ON public.email_send_state;
+DROP TRIGGER IF EXISTS update_stale_subs_alert_state_updated_at ON public.stale_subs_alert_state;

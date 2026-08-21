@@ -1,0 +1,9 @@
+REVOKE EXECUTE ON FUNCTION public.update_updated_at_column() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.protect_profile_plan_change() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.reset_credits_on_plan_change() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.sync_profile_plan_on_activation() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.notify_admin_on_subscription_request() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.lock_topup_from_package() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.enforce_video_processing_limit() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.enforce_generation_integrity() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;

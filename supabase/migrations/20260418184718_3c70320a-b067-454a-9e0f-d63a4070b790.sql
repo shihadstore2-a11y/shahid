@@ -1,0 +1,1 @@
+UPDATE public.app_settings SET bank_name = 'مصرف الإنماء', updated_at = now() WHERE id = 1;

@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trg_plan_credits_updated_at ON public.plan_credits;

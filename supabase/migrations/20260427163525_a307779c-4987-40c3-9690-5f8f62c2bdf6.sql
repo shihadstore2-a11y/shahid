@@ -1,0 +1,13 @@
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
+DROP TRIGGER IF EXISTS update_subscription_requests_updated_at ON public.subscription_requests;
+DROP TRIGGER IF EXISTS update_contact_submissions_updated_at ON public.contact_submissions;
+DROP TRIGGER IF EXISTS update_user_credits_updated_at ON public.user_credits;
+DROP TRIGGER IF EXISTS update_plan_credits_updated_at ON public.plan_credits;
+DROP TRIGGER IF EXISTS update_payment_settings_updated_at ON public.payment_settings;
+DROP TRIGGER IF EXISTS update_topup_packages_updated_at ON public.topup_packages;
+DROP TRIGGER IF EXISTS update_topup_purchases_updated_at ON public.topup_purchases;
+DROP TRIGGER IF EXISTS update_campaign_packs_updated_at ON public.campaign_packs;
+DROP TRIGGER IF EXISTS update_video_jobs_updated_at ON public.video_jobs;
+DROP TRIGGER IF EXISTS update_email_send_state_updated_at ON public.email_send_state;
+DROP TRIGGER IF EXISTS update_dlq_alert_state_updated_at ON public.dlq_alert_state;
+DROP TRIGGER IF EXISTS update_stale_subs_alert_state_updated_at ON public.stale_subs_alert_state;

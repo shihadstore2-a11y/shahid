@@ -1,0 +1,1 @@
+DELETE FROM public.email_send_log WHERE message_id LIKE 'sub-expiring-1d-%';

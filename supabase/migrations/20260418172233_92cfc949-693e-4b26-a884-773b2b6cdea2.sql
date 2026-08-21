@@ -1,0 +1,1 @@
+UPDATE public.app_settings SET founding_base_count = 564, updated_at = now() WHERE id = 1;

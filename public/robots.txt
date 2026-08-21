@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /onboarding
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /api/
+Disallow: /hooks/
+Disallow: /lovable/
+
+Sitemap: https://rifd.site/sitemap.xml
