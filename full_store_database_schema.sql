@@ -7,7 +7,7 @@
 
 
 -- Categories
-CREATE TABLE public.categories (
+CREATE TABLE IF NOT EXISTS public.categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT UNIQUE NOT NULL,
   name_ar TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE public.categories (
 );
 
 -- Products
-CREATE TABLE public.products (
+CREATE TABLE IF NOT EXISTS public.products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT UNIQUE NOT NULL,
   category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
@@ -39,7 +39,7 @@ CREATE TABLE public.products (
 );
 
 -- Product Durations
-CREATE TABLE public.product_durations (
+CREATE TABLE IF NOT EXISTS public.product_durations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
   label_ar TEXT NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE public.product_durations (
 );
 
 -- Coupons
-CREATE TABLE public.coupons (
+CREATE TABLE IF NOT EXISTS public.coupons (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code TEXT UNIQUE NOT NULL,
   discount_percent INT NOT NULL DEFAULT 0,
@@ -69,9 +69,13 @@ ALTER TABLE public.product_durations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 
 -- Public read policies
+DROP POLICY IF EXISTS "categories_public_read" ON public.categories;
 CREATE POLICY "categories_public_read" ON public.categories FOR SELECT USING (true);
+DROP POLICY IF EXISTS "products_public_read" ON public.products;
 CREATE POLICY "products_public_read" ON public.products FOR SELECT USING (true);
+DROP POLICY IF EXISTS "product_durations_public_read" ON public.product_durations;
 CREATE POLICY "product_durations_public_read" ON public.product_durations FOR SELECT USING (true);
+DROP POLICY IF EXISTS "coupons_public_read_active" ON public.coupons;
 CREATE POLICY "coupons_public_read_active" ON public.coupons FOR SELECT USING (is_active = true);
 
 -- Indexes
@@ -190,7 +194,7 @@ DELETE FROM public.categories;
 
 
 -- ORDERS
-CREATE TABLE public.orders (
+CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_number TEXT NOT NULL UNIQUE,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -218,11 +222,13 @@ CREATE INDEX idx_orders_number ON public.orders(order_number);
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can create an order (guest checkout supported)
+DROP POLICY IF EXISTS "orders_public_insert" ON public.orders;
 CREATE POLICY "orders_public_insert" ON public.orders
   FOR INSERT TO public WITH CHECK (true);
 
 -- Anyone can read their own order by id (used on success page right after creation)
 -- Plus authenticated users can read orders linked to their user_id
+DROP POLICY IF EXISTS "orders_owner_read" ON public.orders;
 CREATE POLICY "orders_owner_read" ON public.orders
   FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
@@ -280,34 +286,31 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_orders_touch
-  BEFORE UPDATE ON public.orders
+DROP TRIGGER IF EXISTS trg_orders_touch ON public.orders;
+CREATE TRIGGER trg_orders_touch BEFORE UPDATE ON public.orders
   FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
 -- PROFILES
-CREATE TABLE public.profiles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  full_name TEXT,
-  phone TEXT,
-  email TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+-- Profiles table already created by main platform; ensuring additional store columns exist:
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "profiles_owner_select" ON public.profiles;
 CREATE POLICY "profiles_owner_select" ON public.profiles
   FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "profiles_owner_insert" ON public.profiles;
 CREATE POLICY "profiles_owner_insert" ON public.profiles
   FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "profiles_owner_update" ON public.profiles;
 CREATE POLICY "profiles_owner_update" ON public.profiles
   FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 
-CREATE TRIGGER trg_profiles_touch
-  BEFORE UPDATE ON public.profiles
+DROP TRIGGER IF EXISTS trg_profiles_touch ON public.profiles;
+CREATE TRIGGER trg_profiles_touch BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
 -- Auto-create profile on signup
@@ -358,10 +361,10 @@ REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authentic
 
 
 -- Enum للأدوار
-CREATE TYPE public.admin_role AS ENUM ('super_admin', 'admin', 'staff', 'developer');
+DO $$ BEGIN CREATE TYPE public.admin_role AS ENUM ('super_admin', 'admin', 'staff', 'developer'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- جدول admin_users
-CREATE TABLE public.admin_users (
+CREATE TABLE IF NOT EXISTS public.admin_users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   role public.admin_role NOT NULL DEFAULT 'staff',
@@ -378,7 +381,7 @@ CREATE INDEX idx_admin_users_user_id ON public.admin_users(user_id);
 CREATE INDEX idx_admin_users_role ON public.admin_users(role);
 
 -- جدول admin_audit_logs
-CREATE TABLE public.admin_audit_logs (
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   admin_user_id uuid REFERENCES public.admin_users(id) ON DELETE SET NULL,
   action text NOT NULL,
@@ -449,8 +452,8 @@ END;
 $$;
 
 -- Trigger updated_at
-CREATE TRIGGER trg_admin_users_touch
-BEFORE UPDATE ON public.admin_users
+DROP TRIGGER IF EXISTS trg_admin_users_touch ON public.admin_users;
+CREATE TRIGGER trg_admin_users_touch BEFORE UPDATE ON public.admin_users
 FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
 -- RLS
@@ -458,35 +461,35 @@ ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- admin_users policies
-CREATE POLICY "admin_users_self_read"
-ON public.admin_users FOR SELECT
+DROP POLICY IF EXISTS "admin_users_self_read" ON public.admin_users;
+CREATE POLICY "admin_users_self_read" ON public.admin_users FOR SELECT
 TO authenticated
 USING (auth.uid() = user_id);
 
-CREATE POLICY "admin_users_super_read_all"
-ON public.admin_users FOR SELECT
+DROP POLICY IF EXISTS "admin_users_super_read_all" ON public.admin_users;
+CREATE POLICY "admin_users_super_read_all" ON public.admin_users FOR SELECT
 TO authenticated
 USING (public.is_super_admin(auth.uid()));
 
-CREATE POLICY "admin_users_super_insert"
-ON public.admin_users FOR INSERT
+DROP POLICY IF EXISTS "admin_users_super_insert" ON public.admin_users;
+CREATE POLICY "admin_users_super_insert" ON public.admin_users FOR INSERT
 TO authenticated
 WITH CHECK (public.is_super_admin(auth.uid()));
 
-CREATE POLICY "admin_users_super_update"
-ON public.admin_users FOR UPDATE
+DROP POLICY IF EXISTS "admin_users_super_update" ON public.admin_users;
+CREATE POLICY "admin_users_super_update" ON public.admin_users FOR UPDATE
 TO authenticated
 USING (public.is_super_admin(auth.uid()))
 WITH CHECK (public.is_super_admin(auth.uid()));
 
-CREATE POLICY "admin_users_super_delete"
-ON public.admin_users FOR DELETE
+DROP POLICY IF EXISTS "admin_users_super_delete" ON public.admin_users;
+CREATE POLICY "admin_users_super_delete" ON public.admin_users FOR DELETE
 TO authenticated
 USING (public.is_super_admin(auth.uid()));
 
 -- admin_audit_logs policies
-CREATE POLICY "audit_logs_admin_read"
-ON public.admin_audit_logs FOR SELECT
+DROP POLICY IF EXISTS "audit_logs_admin_read" ON public.admin_audit_logs;
+CREATE POLICY "audit_logs_admin_read" ON public.admin_audit_logs FOR SELECT
 TO authenticated
 USING (public.is_admin(auth.uid()));
 
@@ -585,8 +588,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS enforce_order_rate_limit ON public.orders;
-CREATE TRIGGER enforce_order_rate_limit
-  BEFORE INSERT ON public.orders
+DROP TRIGGER IF EXISTS enforce_order_rate_limit ON public.orders;
+CREATE TRIGGER enforce_order_rate_limit BEFORE INSERT ON public.orders
   FOR EACH ROW
   EXECUTE FUNCTION public.check_order_rate_limit();
 
@@ -704,15 +707,15 @@ DELETE FROM public.categories WHERE slug = 'vulture';
 -- Migration File: 20260517060226_6b72ea57-9889-4a47-a7f6-ca7c0aeead9a.sql
 -- ==========================================
 
-CREATE POLICY "admin_can_update_orders"
-ON public.orders
+DROP POLICY IF EXISTS "admin_can_update_orders" ON public.orders;
+CREATE POLICY "admin_can_update_orders" ON public.orders
 FOR UPDATE
 TO authenticated
 USING (is_admin(auth.uid()))
 WITH CHECK (is_admin(auth.uid()));
 
-CREATE POLICY "admin_can_read_orders"
-ON public.orders
+DROP POLICY IF EXISTS "admin_can_read_orders" ON public.orders;
+CREATE POLICY "admin_can_read_orders" ON public.orders
 FOR SELECT
 TO authenticated
 USING (is_admin(auth.uid()));
@@ -721,8 +724,8 @@ USING (is_admin(auth.uid()));
 -- Migration File: 20260517062437_f1df5251-8ca9-47dd-b915-d0989578dbc7.sql
 -- ==========================================
 
-CREATE POLICY "admin_can_update_products"
-ON public.products
+DROP POLICY IF EXISTS "admin_can_update_products" ON public.products;
+CREATE POLICY "admin_can_update_products" ON public.products
 FOR UPDATE
 TO authenticated
 USING (public.is_admin(auth.uid()))
@@ -732,9 +735,13 @@ WITH CHECK (public.is_admin(auth.uid()));
 -- Migration File: 20260517064229_d765f879-567f-4f91-997c-0fdb7ac1d375.sql
 -- ==========================================
 
+DROP POLICY IF EXISTS "admin_can_read_coupons" ON public.coupons;
 CREATE POLICY "admin_can_read_coupons" ON public.coupons FOR SELECT TO authenticated USING (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "admin_can_insert_coupons" ON public.coupons;
 CREATE POLICY "admin_can_insert_coupons" ON public.coupons FOR INSERT TO authenticated WITH CHECK (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "admin_can_update_coupons" ON public.coupons;
 CREATE POLICY "admin_can_update_coupons" ON public.coupons FOR UPDATE TO authenticated USING (is_admin(auth.uid())) WITH CHECK (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "admin_can_delete_coupons" ON public.coupons;
 CREATE POLICY "admin_can_delete_coupons" ON public.coupons FOR DELETE TO authenticated USING (is_admin(auth.uid()));
 
 -- ==========================================
@@ -792,27 +799,27 @@ CREATE TABLE IF NOT EXISTS public.store_settings (
 ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "store_settings_public_read" ON public.store_settings;
-CREATE POLICY "store_settings_public_read"
-  ON public.store_settings FOR SELECT
+DROP POLICY IF EXISTS "store_settings_public_read" ON public.store_settings;
+CREATE POLICY "store_settings_public_read" ON public.store_settings FOR SELECT
   TO anon, authenticated
   USING (true);
 
 DROP POLICY IF EXISTS "store_settings_admin_insert" ON public.store_settings;
-CREATE POLICY "store_settings_admin_insert"
-  ON public.store_settings FOR INSERT
+DROP POLICY IF EXISTS "store_settings_admin_insert" ON public.store_settings;
+CREATE POLICY "store_settings_admin_insert" ON public.store_settings FOR INSERT
   TO authenticated
   WITH CHECK (public.is_admin(auth.uid()));
 
 DROP POLICY IF EXISTS "store_settings_admin_update" ON public.store_settings;
-CREATE POLICY "store_settings_admin_update"
-  ON public.store_settings FOR UPDATE
+DROP POLICY IF EXISTS "store_settings_admin_update" ON public.store_settings;
+CREATE POLICY "store_settings_admin_update" ON public.store_settings FOR UPDATE
   TO authenticated
   USING (public.is_admin(auth.uid()))
   WITH CHECK (public.is_admin(auth.uid()));
 
 DROP TRIGGER IF EXISTS store_settings_touch ON public.store_settings;
-CREATE TRIGGER store_settings_touch
-  BEFORE UPDATE ON public.store_settings
+DROP TRIGGER IF EXISTS store_settings_touch ON public.store_settings;
+CREATE TRIGGER store_settings_touch BEFORE UPDATE ON public.store_settings
   FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
 INSERT INTO public.store_settings (key, value, description) VALUES
@@ -844,39 +851,39 @@ CREATE TABLE IF NOT EXISTS public.activation_steps (
 ALTER TABLE public.activation_steps ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "activation_steps_public_read_active" ON public.activation_steps;
-CREATE POLICY "activation_steps_public_read_active"
-  ON public.activation_steps FOR SELECT
+DROP POLICY IF EXISTS "activation_steps_public_read_active" ON public.activation_steps;
+CREATE POLICY "activation_steps_public_read_active" ON public.activation_steps FOR SELECT
   TO anon, authenticated
   USING (is_active = true);
 
 DROP POLICY IF EXISTS "activation_steps_admin_read_all" ON public.activation_steps;
-CREATE POLICY "activation_steps_admin_read_all"
-  ON public.activation_steps FOR SELECT
+DROP POLICY IF EXISTS "activation_steps_admin_read_all" ON public.activation_steps;
+CREATE POLICY "activation_steps_admin_read_all" ON public.activation_steps FOR SELECT
   TO authenticated
   USING (public.is_admin(auth.uid()));
 
 DROP POLICY IF EXISTS "activation_steps_admin_insert" ON public.activation_steps;
-CREATE POLICY "activation_steps_admin_insert"
-  ON public.activation_steps FOR INSERT
+DROP POLICY IF EXISTS "activation_steps_admin_insert" ON public.activation_steps;
+CREATE POLICY "activation_steps_admin_insert" ON public.activation_steps FOR INSERT
   TO authenticated
   WITH CHECK (public.is_admin(auth.uid()));
 
 DROP POLICY IF EXISTS "activation_steps_admin_update" ON public.activation_steps;
-CREATE POLICY "activation_steps_admin_update"
-  ON public.activation_steps FOR UPDATE
+DROP POLICY IF EXISTS "activation_steps_admin_update" ON public.activation_steps;
+CREATE POLICY "activation_steps_admin_update" ON public.activation_steps FOR UPDATE
   TO authenticated
   USING (public.is_admin(auth.uid()))
   WITH CHECK (public.is_admin(auth.uid()));
 
 DROP POLICY IF EXISTS "activation_steps_admin_delete" ON public.activation_steps;
-CREATE POLICY "activation_steps_admin_delete"
-  ON public.activation_steps FOR DELETE
+DROP POLICY IF EXISTS "activation_steps_admin_delete" ON public.activation_steps;
+CREATE POLICY "activation_steps_admin_delete" ON public.activation_steps FOR DELETE
   TO authenticated
   USING (public.is_admin(auth.uid()));
 
 DROP TRIGGER IF EXISTS activation_steps_touch ON public.activation_steps;
-CREATE TRIGGER activation_steps_touch
-  BEFORE UPDATE ON public.activation_steps
+DROP TRIGGER IF EXISTS activation_steps_touch ON public.activation_steps;
+CREATE TRIGGER activation_steps_touch BEFORE UPDATE ON public.activation_steps
   FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
 -- Seed 24 steps (نقل حرفي من src/routes/activation-guide.tsx)
@@ -911,8 +918,8 @@ ON CONFLICT (device_type, step_order) DO NOTHING;
 -- admin_users: read-all policy + last-super-admin trigger
 -- ============================================================
 DROP POLICY IF EXISTS "admin_users_admin_read_all" ON public.admin_users;
-CREATE POLICY "admin_users_admin_read_all"
-  ON public.admin_users FOR SELECT
+DROP POLICY IF EXISTS "admin_users_admin_read_all" ON public.admin_users;
+CREATE POLICY "admin_users_admin_read_all" ON public.admin_users FOR SELECT
   TO authenticated
   USING (public.is_admin(auth.uid()));
 
@@ -949,8 +956,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS prevent_last_super_admin_trigger ON public.admin_users;
-CREATE TRIGGER prevent_last_super_admin_trigger
-  BEFORE UPDATE ON public.admin_users
+DROP TRIGGER IF EXISTS prevent_last_super_admin_trigger ON public.admin_users;
+CREATE TRIGGER prevent_last_super_admin_trigger BEFORE UPDATE ON public.admin_users
   FOR EACH ROW EXECUTE FUNCTION public.prevent_last_super_admin_change();
 
 
@@ -965,7 +972,7 @@ UPDATE public.store_settings SET value = '966500451602', updated_at = now() WHER
 -- ==========================================
 
 -- 1) جدول معاملات الدفع (EdfaPay)
-CREATE TABLE public.payment_transactions (
+CREATE TABLE IF NOT EXISTS public.payment_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL,
   order_number TEXT NOT NULL,
@@ -991,14 +998,14 @@ CREATE INDEX idx_payment_transactions_status ON public.payment_transactions(stat
 ALTER TABLE public.payment_transactions ENABLE ROW LEVEL SECURITY;
 
 -- المشرفون يقرؤون كل المعاملات
-CREATE POLICY "payment_transactions_admin_read"
-  ON public.payment_transactions FOR SELECT
+DROP POLICY IF EXISTS "payment_transactions_admin_read" ON public.payment_transactions;
+CREATE POLICY "payment_transactions_admin_read" ON public.payment_transactions FOR SELECT
   TO authenticated
   USING (public.is_admin(auth.uid()));
 
 -- المالك يقرأ معاملات طلباته فقط
-CREATE POLICY "payment_transactions_owner_read"
-  ON public.payment_transactions FOR SELECT
+DROP POLICY IF EXISTS "payment_transactions_owner_read" ON public.payment_transactions;
+CREATE POLICY "payment_transactions_owner_read" ON public.payment_transactions FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -1010,8 +1017,8 @@ CREATE POLICY "payment_transactions_owner_read"
 -- لا INSERT/UPDATE/DELETE من المستخدمين (الـ webhook يستخدم service role)
 
 -- trigger لتحديث updated_at
-CREATE TRIGGER trg_payment_transactions_updated_at
-  BEFORE UPDATE ON public.payment_transactions
+DROP TRIGGER IF EXISTS trg_payment_transactions_updated_at ON public.payment_transactions;
+CREATE TRIGGER trg_payment_transactions_updated_at BEFORE UPDATE ON public.payment_transactions
   FOR EACH ROW
   EXECUTE FUNCTION public.touch_updated_at();
 
@@ -1079,18 +1086,18 @@ CREATE INDEX IF NOT EXISTS idx_store_reviews_active_order
 
 ALTER TABLE public.store_reviews ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "store_reviews_public_read_active"
-ON public.store_reviews FOR SELECT TO anon, authenticated
+DROP POLICY IF EXISTS "store_reviews_public_read_active" ON public.store_reviews;
+CREATE POLICY "store_reviews_public_read_active" ON public.store_reviews FOR SELECT TO anon, authenticated
 USING (is_active = true);
 
-CREATE POLICY "store_reviews_admin_all"
-ON public.store_reviews FOR ALL TO authenticated
+DROP POLICY IF EXISTS "store_reviews_admin_all" ON public.store_reviews;
+CREATE POLICY "store_reviews_admin_all" ON public.store_reviews FOR ALL TO authenticated
 USING (public.is_admin(auth.uid()))
 WITH CHECK (public.is_admin(auth.uid()));
 
 DROP TRIGGER IF EXISTS store_reviews_touch_updated_at ON public.store_reviews;
-CREATE TRIGGER store_reviews_touch_updated_at
-BEFORE UPDATE ON public.store_reviews
+DROP TRIGGER IF EXISTS store_reviews_touch_updated_at ON public.store_reviews;
+CREATE TRIGGER store_reviews_touch_updated_at BEFORE UPDATE ON public.store_reviews
 FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
 INSERT INTO public.store_reviews (customer_name, customer_city, product_label, rating, review_text, display_order) VALUES
@@ -1128,18 +1135,18 @@ CREATE INDEX IF NOT EXISTS idx_articles_slug ON public.articles(slug);
 
 ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "articles_public_read_published"
-ON public.articles FOR SELECT TO anon, authenticated
+DROP POLICY IF EXISTS "articles_public_read_published" ON public.articles;
+CREATE POLICY "articles_public_read_published" ON public.articles FOR SELECT TO anon, authenticated
 USING (is_published = true);
 
-CREATE POLICY "articles_admin_all"
-ON public.articles FOR ALL TO authenticated
+DROP POLICY IF EXISTS "articles_admin_all" ON public.articles;
+CREATE POLICY "articles_admin_all" ON public.articles FOR ALL TO authenticated
 USING (public.is_admin(auth.uid()))
 WITH CHECK (public.is_admin(auth.uid()));
 
 DROP TRIGGER IF EXISTS articles_updated_at ON public.articles;
-CREATE TRIGGER articles_updated_at
-BEFORE UPDATE ON public.articles
+DROP TRIGGER IF EXISTS articles_updated_at ON public.articles;
+CREATE TRIGGER articles_updated_at BEFORE UPDATE ON public.articles
 FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
 CREATE OR REPLACE FUNCTION public.increment_article_views(article_slug text)
@@ -1843,8 +1850,8 @@ ON CONFLICT (user_id) DO NOTHING;
 
 -- PART 3: Attach Trigger on auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
+DROP TRIGGER IF EXISTS on_auth_user_created ON public.profiles;
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
@@ -1969,22 +1976,22 @@ CREATE TABLE IF NOT EXISTS public.email_send_log (
 ALTER TABLE public.email_send_log ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read send log"
-    ON public.email_send_log FOR SELECT
+  DROP POLICY IF EXISTS "Service role can read send log" ON public.email_send_log;
+CREATE POLICY "Service role can read send log" ON public.email_send_log FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert send log"
-    ON public.email_send_log FOR INSERT
+  DROP POLICY IF EXISTS "Service role can insert send log" ON public.email_send_log;
+CREATE POLICY "Service role can insert send log" ON public.email_send_log FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can update send log"
-    ON public.email_send_log FOR UPDATE
+  DROP POLICY IF EXISTS "Service role can update send log" ON public.email_send_log;
+CREATE POLICY "Service role can update send log" ON public.email_send_log FOR UPDATE
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -2048,8 +2055,8 @@ END $$;
 ALTER TABLE public.email_send_state ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can manage send state"
-    ON public.email_send_state FOR ALL
+  DROP POLICY IF EXISTS "Service role can manage send state" ON public.email_send_state;
+CREATE POLICY "Service role can manage send state" ON public.email_send_state FOR ALL
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -2149,15 +2156,15 @@ CREATE TABLE IF NOT EXISTS public.suppressed_emails (
 ALTER TABLE public.suppressed_emails ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read suppressed emails"
-    ON public.suppressed_emails FOR SELECT
+  DROP POLICY IF EXISTS "Service role can read suppressed emails" ON public.suppressed_emails;
+CREATE POLICY "Service role can read suppressed emails" ON public.suppressed_emails FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert suppressed emails"
-    ON public.suppressed_emails FOR INSERT
+  DROP POLICY IF EXISTS "Service role can insert suppressed emails" ON public.suppressed_emails;
+CREATE POLICY "Service role can insert suppressed emails" ON public.suppressed_emails FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -2177,22 +2184,22 @@ CREATE TABLE IF NOT EXISTS public.email_unsubscribe_tokens (
 ALTER TABLE public.email_unsubscribe_tokens ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read tokens"
-    ON public.email_unsubscribe_tokens FOR SELECT
+  DROP POLICY IF EXISTS "Service role can read tokens" ON public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can read tokens" ON public.email_unsubscribe_tokens FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert tokens"
-    ON public.email_unsubscribe_tokens FOR INSERT
+  DROP POLICY IF EXISTS "Service role can insert tokens" ON public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can insert tokens" ON public.email_unsubscribe_tokens FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can mark tokens as used"
-    ON public.email_unsubscribe_tokens FOR UPDATE
+  DROP POLICY IF EXISTS "Service role can mark tokens as used" ON public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can mark tokens as used" ON public.email_unsubscribe_tokens FOR UPDATE
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -2267,22 +2274,22 @@ CREATE TABLE IF NOT EXISTS public.email_send_log (
 ALTER TABLE public.email_send_log ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read send log"
-    ON public.email_send_log FOR SELECT
+  DROP POLICY IF EXISTS "Service role can read send log" ON public.email_send_log;
+CREATE POLICY "Service role can read send log" ON public.email_send_log FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert send log"
-    ON public.email_send_log FOR INSERT
+  DROP POLICY IF EXISTS "Service role can insert send log" ON public.email_send_log;
+CREATE POLICY "Service role can insert send log" ON public.email_send_log FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can update send log"
-    ON public.email_send_log FOR UPDATE
+  DROP POLICY IF EXISTS "Service role can update send log" ON public.email_send_log;
+CREATE POLICY "Service role can update send log" ON public.email_send_log FOR UPDATE
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -2346,8 +2353,8 @@ END $$;
 ALTER TABLE public.email_send_state ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can manage send state"
-    ON public.email_send_state FOR ALL
+  DROP POLICY IF EXISTS "Service role can manage send state" ON public.email_send_state;
+CREATE POLICY "Service role can manage send state" ON public.email_send_state FOR ALL
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -2447,15 +2454,15 @@ CREATE TABLE IF NOT EXISTS public.suppressed_emails (
 ALTER TABLE public.suppressed_emails ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read suppressed emails"
-    ON public.suppressed_emails FOR SELECT
+  DROP POLICY IF EXISTS "Service role can read suppressed emails" ON public.suppressed_emails;
+CREATE POLICY "Service role can read suppressed emails" ON public.suppressed_emails FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert suppressed emails"
-    ON public.suppressed_emails FOR INSERT
+  DROP POLICY IF EXISTS "Service role can insert suppressed emails" ON public.suppressed_emails;
+CREATE POLICY "Service role can insert suppressed emails" ON public.suppressed_emails FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -2475,22 +2482,22 @@ CREATE TABLE IF NOT EXISTS public.email_unsubscribe_tokens (
 ALTER TABLE public.email_unsubscribe_tokens ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read tokens"
-    ON public.email_unsubscribe_tokens FOR SELECT
+  DROP POLICY IF EXISTS "Service role can read tokens" ON public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can read tokens" ON public.email_unsubscribe_tokens FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert tokens"
-    ON public.email_unsubscribe_tokens FOR INSERT
+  DROP POLICY IF EXISTS "Service role can insert tokens" ON public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can insert tokens" ON public.email_unsubscribe_tokens FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can mark tokens as used"
-    ON public.email_unsubscribe_tokens FOR UPDATE
+  DROP POLICY IF EXISTS "Service role can mark tokens as used" ON public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can mark tokens as used" ON public.email_unsubscribe_tokens FOR UPDATE
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -2565,22 +2572,22 @@ CREATE TABLE IF NOT EXISTS public.email_send_log (
 ALTER TABLE public.email_send_log ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read send log"
-    ON public.email_send_log FOR SELECT
+  DROP POLICY IF EXISTS "Service role can read send log" ON public.email_send_log;
+CREATE POLICY "Service role can read send log" ON public.email_send_log FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert send log"
-    ON public.email_send_log FOR INSERT
+  DROP POLICY IF EXISTS "Service role can insert send log" ON public.email_send_log;
+CREATE POLICY "Service role can insert send log" ON public.email_send_log FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can update send log"
-    ON public.email_send_log FOR UPDATE
+  DROP POLICY IF EXISTS "Service role can update send log" ON public.email_send_log;
+CREATE POLICY "Service role can update send log" ON public.email_send_log FOR UPDATE
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -2644,8 +2651,8 @@ END $$;
 ALTER TABLE public.email_send_state ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can manage send state"
-    ON public.email_send_state FOR ALL
+  DROP POLICY IF EXISTS "Service role can manage send state" ON public.email_send_state;
+CREATE POLICY "Service role can manage send state" ON public.email_send_state FOR ALL
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -2745,15 +2752,15 @@ CREATE TABLE IF NOT EXISTS public.suppressed_emails (
 ALTER TABLE public.suppressed_emails ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read suppressed emails"
-    ON public.suppressed_emails FOR SELECT
+  DROP POLICY IF EXISTS "Service role can read suppressed emails" ON public.suppressed_emails;
+CREATE POLICY "Service role can read suppressed emails" ON public.suppressed_emails FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert suppressed emails"
-    ON public.suppressed_emails FOR INSERT
+  DROP POLICY IF EXISTS "Service role can insert suppressed emails" ON public.suppressed_emails;
+CREATE POLICY "Service role can insert suppressed emails" ON public.suppressed_emails FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -2773,22 +2780,22 @@ CREATE TABLE IF NOT EXISTS public.email_unsubscribe_tokens (
 ALTER TABLE public.email_unsubscribe_tokens ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can read tokens"
-    ON public.email_unsubscribe_tokens FOR SELECT
+  DROP POLICY IF EXISTS "Service role can read tokens" ON public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can read tokens" ON public.email_unsubscribe_tokens FOR SELECT
     USING (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can insert tokens"
-    ON public.email_unsubscribe_tokens FOR INSERT
+  DROP POLICY IF EXISTS "Service role can insert tokens" ON public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can insert tokens" ON public.email_unsubscribe_tokens FOR INSERT
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE POLICY "Service role can mark tokens as used"
-    ON public.email_unsubscribe_tokens FOR UPDATE
+  DROP POLICY IF EXISTS "Service role can mark tokens as used" ON public.email_unsubscribe_tokens;
+CREATE POLICY "Service role can mark tokens as used" ON public.email_unsubscribe_tokens FOR UPDATE
     USING (auth.role() = 'service_role')
     WITH CHECK (auth.role() = 'service_role');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -2935,7 +2942,7 @@ CREATE POLICY orders_anon_insert ON public.orders
   );
 
 -- 2. product_costs
-CREATE TABLE public.product_costs (
+CREATE TABLE IF NOT EXISTS public.product_costs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   product_slug text NOT NULL,
   unit_cost numeric(10,2) NOT NULL CHECK (unit_cost >= 0),
@@ -2951,6 +2958,7 @@ CREATE TABLE public.product_costs (
 CREATE UNIQUE INDEX product_costs_active_unique ON public.product_costs(product_slug) WHERE effective_to IS NULL;
 CREATE INDEX product_costs_slug_idx ON public.product_costs(product_slug);
 CREATE INDEX product_costs_effective_idx ON public.product_costs(effective_from, effective_to);
+DROP TRIGGER IF EXISTS set_updated_at_product_costs ON public.product_costs;
 CREATE TRIGGER set_updated_at_product_costs BEFORE UPDATE ON public.product_costs FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 GRANT SELECT, INSERT, UPDATE ON public.product_costs TO authenticated;
 GRANT ALL ON public.product_costs TO service_role;
@@ -2959,7 +2967,7 @@ CREATE POLICY product_costs_admin_read ON public.product_costs FOR SELECT TO aut
 CREATE POLICY product_costs_admin_modify ON public.product_costs FOR ALL TO authenticated USING (public.can_modify_data(auth.uid())) WITH CHECK (public.can_modify_data(auth.uid()));
 
 -- 3. expenses
-CREATE TABLE public.expenses (
+CREATE TABLE IF NOT EXISTS public.expenses (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   category text NOT NULL CHECK (category IN ('marketing','tools','salaries','hosting','support','legal','other')),
   description text NOT NULL CHECK (length(description) BETWEEN 3 AND 500),
@@ -2973,6 +2981,7 @@ CREATE TABLE public.expenses (
 );
 CREATE INDEX expenses_date_idx ON public.expenses(expense_date DESC);
 CREATE INDEX expenses_category_idx ON public.expenses(category);
+DROP TRIGGER IF EXISTS set_updated_at_expenses ON public.expenses;
 CREATE TRIGGER set_updated_at_expenses BEFORE UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 GRANT SELECT, INSERT, UPDATE ON public.expenses TO authenticated;
 GRANT ALL ON public.expenses TO service_role;
@@ -2981,7 +2990,7 @@ CREATE POLICY expenses_admin_read ON public.expenses FOR SELECT TO authenticated
 CREATE POLICY expenses_admin_modify ON public.expenses FOR ALL TO authenticated USING (public.can_modify_data(auth.uid())) WITH CHECK (public.can_modify_data(auth.uid()));
 
 -- 4. refunds
-CREATE TABLE public.refunds (
+CREATE TABLE IF NOT EXISTS public.refunds (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id uuid NOT NULL REFERENCES public.orders(id) ON DELETE RESTRICT,
   amount numeric(10,2) NOT NULL CHECK (amount > 0),
@@ -2999,7 +3008,7 @@ CREATE POLICY refunds_admin_read ON public.refunds FOR SELECT TO authenticated U
 CREATE POLICY refunds_admin_modify ON public.refunds FOR ALL TO authenticated USING (public.can_modify_data(auth.uid())) WITH CHECK (public.can_modify_data(auth.uid()));
 
 -- 5. payment_fees
-CREATE TABLE public.payment_fees (
+CREATE TABLE IF NOT EXISTS public.payment_fees (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   payment_transaction_id uuid NULL REFERENCES public.payment_transactions(id),
   order_id uuid NOT NULL REFERENCES public.orders(id) ON DELETE RESTRICT,
@@ -3017,7 +3026,7 @@ CREATE POLICY payment_fees_admin_read ON public.payment_fees FOR SELECT TO authe
 CREATE POLICY payment_fees_admin_modify ON public.payment_fees FOR ALL TO authenticated USING (public.can_modify_data(auth.uid())) WITH CHECK (public.can_modify_data(auth.uid()));
 
 -- 6. financial_periods
-CREATE TABLE public.financial_periods (
+CREATE TABLE IF NOT EXISTS public.financial_periods (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   year int NOT NULL CHECK (year BETWEEN 2024 AND 2100),
   month int NOT NULL CHECK (month BETWEEN 1 AND 12),
@@ -3030,6 +3039,7 @@ CREATE TABLE public.financial_periods (
   UNIQUE (year, month)
 );
 CREATE INDEX financial_periods_status_idx ON public.financial_periods(status);
+DROP TRIGGER IF EXISTS set_updated_at_financial_periods ON public.financial_periods;
 CREATE TRIGGER set_updated_at_financial_periods BEFORE UPDATE ON public.financial_periods FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 GRANT SELECT, INSERT, UPDATE ON public.financial_periods TO authenticated;
 GRANT ALL ON public.financial_periods TO service_role;
@@ -3047,6 +3057,7 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+DROP TRIGGER IF EXISTS protect_locked_periods ON public.financial_periods;
 CREATE TRIGGER protect_locked_periods BEFORE UPDATE ON public.financial_periods FOR EACH ROW WHEN (OLD.status = 'locked') EXECUTE FUNCTION public.prevent_locked_period_modification();
 
 -- 8. orders_production VIEW (security_invoker honors caller's RLS on orders)
@@ -3440,7 +3451,7 @@ BEGIN;
 CREATE TYPE subscription_provider AS ENUM ('falcon', 'smarters', 'hulk');
 COMMENT ON TYPE subscription_provider IS 'IPTV subscription provider types. Universal regardless of backup policy.';
 
-CREATE TABLE public.subscription_inventory (
+CREATE TABLE IF NOT EXISTS public.subscription_inventory (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   provider subscription_provider NOT NULL,
   username text NOT NULL CHECK (length(username) BETWEEN 1 AND 200),
@@ -3505,8 +3516,8 @@ CREATE INDEX idx_inv_expires
 CREATE UNIQUE INDEX idx_inv_unique_credentials 
   ON public.subscription_inventory(provider, username);
 
-CREATE TRIGGER set_updated_at_subscription_inventory
-  BEFORE UPDATE ON public.subscription_inventory
+DROP TRIGGER IF EXISTS set_updated_at_subscription_inventory ON public.subscription_inventory;
+CREATE TRIGGER set_updated_at_subscription_inventory BEFORE UPDATE ON public.subscription_inventory
   FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
 DO $$
