@@ -10,7 +10,7 @@ const NAV = [
   { to: "/", label: "الرئيسية" },
   { to: "/proof-center", label: "مركز الإثبات" },
   { to: "/library", label: "المكتبة" },
-  { to: "/business-solutions", label: "رِفد للأعمال" },
+  { to: "/business-solutions", label: "Digitaneo للأعمال" },
   { to: "/vs-chatgpt", label: "vs ChatGPT" },
   { to: "/pricing", label: "الأسعار" },
   { to: "/about", label: "من نحن" },
@@ -23,7 +23,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:h-17 sm:gap-3">
-          <Link to="/" className="flex min-w-0 flex-1 items-center font-bold md:flex-none" aria-label="رِفد للتقنية">
+          <Link to="/" className="flex min-w-0 flex-1 items-center font-bold md:flex-none" aria-label="Digitaneo للتقنية">
             <span className="sm:hidden">
               <RifdLogo size="sm" showDescriptor={false} />
             </span>

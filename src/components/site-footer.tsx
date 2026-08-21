@@ -9,11 +9,11 @@ export function SiteFooter() {
       <div className="mx-auto max-w-7xl px-4 py-12">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
-            <Link to="/" className="inline-flex items-center font-bold" aria-label="رِفد للتقنية">
+            <Link to="/" className="inline-flex items-center font-bold" aria-label="Digitaneo للتقنية">
               <RifdLogo size="md" showDescriptor />
             </Link>
             <p className="mt-4 max-w-md text-sm leading-7 text-muted-foreground">
-              رِفد للتقنية: منصة سعودية للمتاجر تقدّم محتوى، صور، وحملات ذكية للسوق السعودي، مع مسار مؤسسي مخصص عند الحاجة للوكالات والمؤسسات.
+              Digitaneo للتقنية: منصة سعودية للمتاجر تقدّم محتوى، صور، وحملات ذكية للسوق السعودي، مع مسار مؤسسي مخصص عند الحاجة للوكالات والمؤسسات.
             </p>
 
             <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/5 px-3 py-1.5 text-[11px] font-bold text-success">
@@ -28,8 +28,8 @@ export function SiteFooter() {
               <li><Link to="/library" className="text-muted-foreground hover:text-foreground">المكتبة</Link></li>
               <li><Link to="/proof-center" className="text-muted-foreground hover:text-foreground">مركز الإثبات</Link></li>
               <li><Link to="/pricing" className="text-muted-foreground hover:text-foreground">الأسعار</Link></li>
-              <li><Link to="/business-solutions" className="text-muted-foreground hover:text-foreground">رِفد للأعمال</Link></li>
-              <li><Link to="/vs-chatgpt" className="text-muted-foreground hover:text-foreground">رِفد vs ChatGPT</Link></li>
+              <li><Link to="/business-solutions" className="text-muted-foreground hover:text-foreground">Digitaneo للأعمال</Link></li>
+              <li><Link to="/vs-chatgpt" className="text-muted-foreground hover:text-foreground">Digitaneo vs ChatGPT</Link></li>
               <li><Link to="/onboarding" className="text-muted-foreground hover:text-foreground">جرّب مجاناً</Link></li>
             </ul>
           </div>
@@ -43,9 +43,9 @@ export function SiteFooter() {
               <li><Link to="/legal/terms" className="text-muted-foreground hover:text-foreground">الشروط والأحكام</Link></li>
               <li><Link to="/legal/refund" className="text-muted-foreground hover:text-foreground">سياسة الاسترجاع</Link></li>
               <li>
-                <a href="mailto:hello@rifd.site" className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+                <a href="mailto:support@digitaneo.com" className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
                   <Mail className="h-3.5 w-3.5" />
-                  <span>hello@rifd.site</span>
+                  <span>support@digitaneo.com</span>
                 </a>
               </li>
               <li>

@@ -33,11 +33,11 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "author", content: "رِفد للتقنية" },
+      { name: "author", content: "Digitaneo للتقنية" },
       { name: "theme-color", content: "#1a5d3e" },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "ar_SA" },
-      { property: "og:site_name", content: "رِفد للتقنية" },
+      { property: "og:site_name", content: "Digitaneo للتقنية" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [

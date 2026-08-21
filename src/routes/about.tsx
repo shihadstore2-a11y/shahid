@@ -6,18 +6,18 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "من نحن — رِفد للتقنية" },
+      { title: "من نحن — Digitaneo للتقنية" },
       {
         name: "description",
         content:
-          "رِفد للتقنية — شركة سعودية تبني أدوات محتوى وتسويق ذكية للمتاجر، مع اشتراكات داخل المنتج ومسار رِفد للأعمال للحالات المؤسسية الأوسع.",
+          "Digitaneo للتقنية — شركة سعودية تبني أدوات محتوى وتسويق ذكية للمتاجر، مع اشتراكات داخل المنتج ومسار Digitaneo للأعمال للحالات المؤسسية الأوسع.",
       },
-      { property: "og:title", content: "من نحن — رِفد للتقنية" },
-      { property: "og:description", content: "قصة رِفد ورؤيتنا لتمكين كل متجر سعودي بأدوات AI محلية." },
-      { name: "twitter:title", content: "من نحن — رِفد للتقنية" },
-      { name: "twitter:description", content: "قصة رِفد ورؤيتنا لتمكين كل متجر سعودي بأدوات AI محلية." },
+      { property: "og:title", content: "من نحن — Digitaneo للتقنية" },
+      { property: "og:description", content: "قصة Digitaneo ورؤيتنا لتمكين كل متجر سعودي بأدوات AI محلية." },
+      { name: "twitter:title", content: "من نحن — Digitaneo للتقنية" },
+      { name: "twitter:description", content: "قصة Digitaneo ورؤيتنا لتمكين كل متجر سعودي بأدوات AI محلية." },
     ],
-    links: [{ rel: "canonical", href: "https://rifd.site/about" }],
+    links: [{ rel: "canonical", href: "https://digitaneo.com/about" }],
   }),
   component: AboutPage,
 });
@@ -32,7 +32,7 @@ function AboutPage() {
             صُنع في الرياض
           </div>
           <h1 className="mt-4 min-h-[9rem] text-4xl font-extrabold leading-[1.28] sm:min-h-[4.5rem] sm:text-5xl sm:leading-[1.18]">
-              نحن <span className="text-gradient-primary">رِفد للتقنية</span>
+              نحن <span className="text-gradient-primary">Digitaneo للتقنية</span>
           </h1>
           <p className="mt-5 min-h-[7rem] text-lg leading-8 text-muted-foreground sm:min-h-[4rem]">
             نؤمن إن كل صاحب متجر سعودي يستحق أدوات ذكاء اصطناعي مصممة بعنايته
@@ -46,7 +46,7 @@ function AboutPage() {
           <h2 className="text-2xl font-extrabold">قصتنا</h2>
           <div className="mt-4 space-y-4 text-muted-foreground leading-relaxed">
             <p>
-              بدأنا رِفد لأننا لاحظنا حقيقة بسيطة: أصحاب المتاجر السعوديين يقضّون ساعات
+              بدأنا Digitaneo لأننا لاحظنا حقيقة بسيطة: أصحاب المتاجر السعوديين يقضّون ساعات
               يحاولون يطلّعون من ChatGPT نصوص بنبرة سعودية صحيحة — والنتيجة في الغالب
               فصحى مكسّرة أو ترجمة آلية.
             </p>

@@ -75,10 +75,10 @@ export function RifdLogo({
       </span>
 
       <span className={`min-w-0 leading-none ${labelClassName}`}>
-        <span className={`block font-extrabold text-foreground ${styles.word}`}>رِفد</span>
+        <span className={`block font-extrabold text-foreground ${styles.word}`}>Digitaneo</span>
         {showDescriptor && (
           <span className={`mt-0.5 block font-semibold tracking-[0.08em] text-muted-foreground/90 ${styles.descriptor}`}>
-            للتقنية
+            ديجيتانيو للتقنية
           </span>
         )}
       </span>

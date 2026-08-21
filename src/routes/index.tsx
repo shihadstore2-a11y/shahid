@@ -9,13 +9,13 @@ import ogHomeImage from "@/assets/og-home.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "رِفد — محتوى متجر سعودي بدل ساعات ChatGPT" },
+      { title: "Digitaneo — محتوى متجر سعودي بدل ساعات ChatGPT" },
       {
         name: "description",
         content:
-          "محتوى متجر يبدو سعودياً ويبيع: رِفد يحوّل فهم سلوك المتسوق السعودي إلى نصوص وصور وفيديوهات جاهزة لقنوات البيع والإعلان.",
+          "محتوى متجر يبدو سعودياً ويبيع: Digitaneo يحوّل فهم سلوك المتسوق السعودي إلى نصوص وصور وفيديوهات جاهزة لقنوات البيع والإعلان.",
       },
-      { property: "og:title", content: "رِفد — محتوى متجرك يبدو سعودياً ويبيع" },
+      { property: "og:title", content: "Digitaneo — محتوى متجرك يبدو سعودياً ويبيع" },
       {
         property: "og:description",
         content: "محتوى متجر مبني على فهم السوق السعودي ومتوافق مع سلة، زد، شوبيفاي، Instagram، Google Ads، TikTok، X وSnapchat.",
@@ -23,13 +23,13 @@ export const Route = createFileRoute("/")({
       { property: "og:image", content: ogHomeImage },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
-      { property: "og:image:alt", content: "رِفد — محتوى متجر سعودي جاهز" },
+      { property: "og:image:alt", content: "Digitaneo — محتوى متجر سعودي جاهز" },
       { name: "twitter:image", content: ogHomeImage },
-      { name: "twitter:image:alt", content: "رِفد — محتوى متجر سعودي جاهز" },
-      { name: "twitter:title", content: "رِفد — محتوى متجر سعودي بدل ساعات ChatGPT" },
+      { name: "twitter:image:alt", content: "Digitaneo — محتوى متجر سعودي جاهز" },
+      { name: "twitter:title", content: "Digitaneo — محتوى متجر سعودي بدل ساعات ChatGPT" },
       { name: "twitter:description", content: "نصوص وصور وفيديوهات مبنية على فهم سلوك المتسوق السعودي." },
     ],
-    links: [{ rel: "canonical", href: "https://rifd.site/" }],
+    links: [{ rel: "canonical", href: "https://digitaneo.com/" }],
   }),
   component: HomePage,
 });
