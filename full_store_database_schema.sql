@@ -326,9 +326,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO public.profiles (user_id, full_name, email, phone)
-  VALUES (
-    NEW.id,
+  INSERT INTO public.profiles (id, user_id, full_name, email, phone) VALUES (NEW.id, NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', ''),
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'phone', NEW.phone, '')
@@ -1764,9 +1762,7 @@ BEGIN
 END $$;
 
 -- PART 2: Backfill Existing Users
-INSERT INTO public.profiles (user_id, full_name, phone, email)
-SELECT
-  u.id AS user_id,
+INSERT INTO public.profiles (id, user_id, full_name, phone, email) SELECT u.id AS id, u.id AS user_id,
   COALESCE(
     u.raw_user_meta_data->>'full_name',
     u.raw_user_meta_data->>'name',
@@ -1777,7 +1773,7 @@ SELECT
 FROM auth.users u
 LEFT JOIN public.profiles p ON p.user_id = u.id
 WHERE p.user_id IS NULL
-ON CONFLICT (user_id) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- PART 3: Attach Trigger on auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

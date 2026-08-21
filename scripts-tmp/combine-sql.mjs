@@ -36,7 +36,6 @@ function combineMigrations(migrationsDir, outputFile, isStore = false) {
 
     if (isStore) {
       // Handle profiles table collision if profiles already exists from main app
-      // Using replacement function () => ... so literal $$ is never turned into single $
       content = content.replace(
         /CREATE TABLE public\.profiles \([\s\S]*?\);\n/g,
         () => `-- Profiles table already created by main platform; ensuring additional store columns exist:
@@ -49,6 +48,19 @@ EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 `
       );
+
+      // Fix INSERT INTO public.profiles in handle_new_user to set both id and user_id
+      content = content.replace(
+        /INSERT INTO public\.profiles \(user_id, full_name, email, phone\)\s+VALUES \(\s*NEW\.id,/g,
+        'INSERT INTO public.profiles (id, user_id, full_name, email, phone) VALUES (NEW.id, NEW.id,'
+      );
+
+      // Fix INSERT INTO public.profiles backfill to set both id and user_id
+      content = content.replace(
+        /INSERT INTO public\.profiles \(user_id, full_name, phone, email\)\s+SELECT\s+u\.id AS user_id,/g,
+        'INSERT INTO public.profiles (id, user_id, full_name, phone, email) SELECT u.id AS id, u.id AS user_id,'
+      );
+      content = content.replace(/ON CONFLICT \(user_id\) DO NOTHING;/g, 'ON CONFLICT (id) DO NOTHING;');
 
       // Make all CREATE TABLE safe with IF NOT EXISTS
       content = content.replace(/CREATE TABLE public\.(\w+)/g, (m, p1) => `CREATE TABLE IF NOT EXISTS public.${p1}`);
