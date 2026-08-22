@@ -36,7 +36,8 @@ function DashboardLayout() {
       return;
     }
     if (!profile) return;
-    const needsOnboarding = !profile.onboarded;
+    const isCompleted = profile.onboarded || Boolean((profile as unknown as { onboarding_completed_at?: string })?.onboarding_completed_at) || Boolean(profile.store_name);
+    const needsOnboarding = !isCompleted;
     const path = window.location.pathname;
     const isOnOnboarding = path === "/onboarding" || path.startsWith("/onboarding/");
     if (needsOnboarding && !isOnOnboarding) {

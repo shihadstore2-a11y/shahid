@@ -148,13 +148,30 @@ function WizardPage() {
 
   // إن أكمل سابقاً
   useEffect(() => {
-    const completedAt = (profile as unknown as { onboarding_completed_at?: string | null } | null)?.onboarding_completed_at;
-    if (completedAt) {
+    if (profile?.onboarded || (profile as unknown as { onboarding_completed_at?: string | null })?.onboarding_completed_at) {
       navigate({ to: "/dashboard" });
     }
   }, [profile, navigate]);
 
   const progress = useMemo(() => (step === 1 ? 33 : step === 2 ? 66 : 100), [step]);
+
+  async function handleSkip() {
+    if (user) {
+      try {
+        await supabase
+          .from("profiles")
+          .update({
+            onboarded: true,
+            onboarding_completed_at: new Date().toISOString(),
+          })
+          .eq("id", user.id);
+        void refreshProfile();
+      } catch {
+        /* silent */
+      }
+    }
+    void navigate({ to: "/dashboard" });
+  }
 
   async function handleStep1Next() {
     if (!user) return;
@@ -302,11 +319,16 @@ function WizardPage() {
       <div className="mx-auto w-full max-w-2xl">
         {/* Header */}
         <div className="mb-6 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs text-primary">
-            <Sparkles className="size-3.5" />
-            ابدأ في 60 ثانية
+          <div className="flex items-center justify-between mb-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs text-primary">
+              <Sparkles className="size-3.5" />
+              ابدأ في 60 ثانية
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleSkip} className="text-xs text-muted-foreground hover:text-foreground">
+              تخطي إلى لوحة التحكم ←
+            </Button>
           </div>
-          <h1 className="mt-3 text-2xl font-bold sm:text-3xl">جهّز متجرك واحصل على أول إعلان</h1>
+          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">جهّز متجرك واحصل على أول إعلان</h1>
           <p className="mt-2 text-sm text-muted-foreground sm:text-base">
             ثلاث خطوات قصيرة، ثم نولّد لك نصاً وصورة جاهزَين للنشر.
           </p>
