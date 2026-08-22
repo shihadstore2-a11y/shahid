@@ -1,19 +1,12 @@
 /**
  * Admin Analytics — server function يعيد KPIs + breakdowns للأدمن.
- * محمي بـrequireSupabaseAuth + فحص دور admin يدوياً (RLS على user_roles + has_role).
- *
- * يستخدم الـauthenticated client (RLS-scoped). الـadmin يستطيع قراءة كل
- * subscription_requests + كل profiles عبر سياسات admin الموجودة. أمّا
- * generations/usage_logs فالـRLS لا تسمح للأدمن بقراءة بيانات الآخرين، لذا
- * نستخدم RPC SECURITY DEFINER عند الحاجة لاحقاً. هنا نكتفي بما يستطيع
- * المستخدم العادي قراءته + يحسب الأرقام التجميعية على مستوى الخادم.
- *
- * ملاحظة: لقراءة أرقام شاملة عبر كل المستخدمين بحاجة admin RLS بsubعد. سنطلب
- * من الأدمن سياسة قراءة admin على generations + usage_logs (موصى).
+ * يستخدم supabaseAdmin (service_role) لتجاوز RLS تماماً.
+ * الحماية تتم عبر assertAdmin الذي يتحقق من user_roles.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { assertAdmin, type DbClient } from "@/server/admin-auth";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { DbClient } from "@/server/admin-auth";
 import { currentRiyadhMonth } from "@/lib/usage-month";
 
 export type AdminAnalytics = {
@@ -54,17 +47,27 @@ export type AdminAnalytics = {
 export const getAdminAnalytics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<AdminAnalytics> => {
-    const { supabase, userId } = context as { supabase: DbClient; userId: string };
-    await assertAdmin(supabase, userId);
+    const { userId } = context as { supabase: DbClient; userId: string };
+
+    // التحقق من صلاحية الأدمن عبر service_role client (يتجاوز RLS)
+    const { data: roleRow } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!roleRow) {
+      throw new Error("هذه الصفحة للأدمن فقط");
+    }
 
     const month = currentRiyadhMonth();
     const [year, mon] = month.split("-").map((n) => parseInt(n, 10));
     const startUtc = new Date(Date.UTC(year, mon - 1, 1, -3, 0, 0));
     const endUtc = new Date(Date.UTC(year, mon, 1, -3, 0, 0));
 
-    // نستخدم الـauthenticated client — يعمل بفضل سياسات admin RLS على
-    // profiles/subscription_requests/generations/usage_logs.
-    const adb = supabase;
+    // نستخدم supabaseAdmin (service_role) لتجاوز كل RLS
+    const adb = supabaseAdmin;
 
     const [
       profilesAll,
