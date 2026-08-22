@@ -118,12 +118,14 @@ function AuthPage() {
             void refreshProfile();
           });
       }
-      if (profile && !profile.onboarded) {
+      if (mode === "login" && !onboardingIntent) {
+        void navigate({ to: (redirectPath || "/dashboard") as never });
+      } else if (profile && !profile.onboarded && !profile.store_name) {
         void navigate({ to: "/onboarding/wizard" });
       } else if (!profile && mustCompleteOnboarding) {
         void navigate({ to: "/onboarding/wizard" });
       } else if (`${location.pathname}${location.searchStr}${location.hash}` !== redirectPath) {
-        void navigate({ to: redirectPath as never });
+        void navigate({ to: (redirectPath || "/dashboard") as never });
       }
     }
   }, [authLoading, user, profile, refreshProfile, navigate, redirectPath, location.pathname, location.searchStr, location.hash, onboardingIntent, mode]);

@@ -274,7 +274,7 @@ function AdminAnalyticsPage() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={data.by_model}
+                  data={data.by_model ?? []}
                   dataKey="cost_usd"
                   nameKey="model"
                   outerRadius={90}
@@ -284,7 +284,7 @@ function AdminAnalyticsPage() {
                     return `${name.split("/").pop()}: $${value.toFixed(4)}`;
                   }}
                 >
-                  {data.by_model.map((_, i) => (
+                  {(data.by_model ?? []).map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
@@ -299,7 +299,7 @@ function AdminAnalyticsPage() {
           <h3 className="text-base font-bold">عدد التوليدات حسب النموذج</h3>
           <div className="mt-4 h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.by_model}>
+              <BarChart data={data.by_model ?? []}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis
                   dataKey="model"
@@ -318,7 +318,7 @@ function AdminAnalyticsPage() {
       {/* Top users */}
       <div className="mt-6 rounded-xl border border-border bg-card p-5 shadow-soft">
         <h3 className="text-base font-bold">أعلى 10 مستخدمين كلفةً (هذا الشهر)</h3>
-        {data.top_users.length === 0 ? (
+        {(data.top_users ?? []).length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">لا يوجد توليدات هذا الشهر بعد.</p>
         ) : (
           <div className="mt-4 overflow-x-auto">
@@ -333,7 +333,7 @@ function AdminAnalyticsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {data.top_users.map((u) => (
+                {(data.top_users ?? []).map((u) => (
                   <tr key={u.user_id}>
                     <td className="py-2">
                       <div className="font-medium">{u.store_name ?? "—"}</div>
