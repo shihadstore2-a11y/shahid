@@ -39,18 +39,20 @@ async function hasAdminRole(userId: string) {
 
 export async function adminBeforeLoad({ location }: { location: ParsedLocation }) {
   if (typeof window === "undefined") return;
-  const session = await Promise.race([
-    supabase.auth.getSession().then(({ data }) => data.session).catch(() => null),
-    authTimeout(),
-  ]);
+  try {
+    const session = await Promise.race([
+      supabase.auth.getSession().then(({ data }) => data.session).catch(() => null),
+      authTimeout(),
+    ]);
 
-  if (!session) {
-    throw redirect({ to: "/auth", search: { redirect: location.href } });
-  }
-
-  const isAdmin = await hasAdminRole(session.user.id);
-  if (!isAdmin) {
-    throw redirect({ to: "/dashboard" });
+    if (!session) {
+      throw redirect({ to: "/auth", search: { redirect: location.href } });
+    }
+  } catch (err) {
+    if (err && typeof err === "object" && "to" in err) {
+      throw err;
+    }
+    // Let AdminGuard handle authorization gracefully in the component tree
   }
 }
 

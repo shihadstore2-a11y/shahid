@@ -28,6 +28,38 @@ function NotFoundComponent() {
   );
 }
 
+function RootErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
+      <div className="max-w-xl rounded-2xl border border-destructive/30 bg-destructive/5 p-8 shadow-sm">
+        <h1 className="text-xl font-bold text-destructive mb-3">تفاصيل الخطأ التشخيصي</h1>
+        <p className="text-sm text-muted-foreground mb-4">
+          {error?.message || "حدث خطأ غير معروف"}
+        </p>
+        {error?.stack && (
+          <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-black/90 p-4 text-left font-mono text-xs text-red-400">
+            {error.stack}
+          </pre>
+        )}
+        <div className="mt-6 flex justify-center gap-3">
+          <button
+            onClick={() => reset()}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            إعادة المحاولة
+          </button>
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
+          >
+            العودة للرئيسية
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -54,6 +86,7 @@ export const Route = createRootRoute({
   }),
   shellComponent: RootShell,
   component: RootComponent,
+  errorComponent: RootErrorComponent,
   notFoundComponent: NotFoundComponent,
 });
 
