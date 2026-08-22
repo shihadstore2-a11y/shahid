@@ -65,23 +65,19 @@ function DashboardLayout() {
 
 function DashboardError({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
-  // SECURITY: لا نعرض error.message للمستخدم في الإنتاج لتفادي تسريب
-  // أسماء جداول/سياسات RLS/شظايا SQL أو أي معلومات تشخيصية حساسة.
-  // في وضع التطوير فقط نعرض التفاصيل لتسهيل الـdebugging.
-  const isDev = import.meta.env.DEV;
   return (
     <DashboardShell>
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center">
         <div className="rounded-full bg-destructive/10 p-4">
           <AlertTriangle className="h-8 w-8 text-destructive" />
         </div>
-        <h2 className="text-xl font-extrabold">حدث خطأ غير متوقّع</h2>
+        <h2 className="text-xl font-extrabold text-destructive">حدث خطأ أثناء تحميل الصفحة</h2>
         <p className="max-w-md text-sm text-muted-foreground">
-          تعذّر تحميل هذه الصفحة. حاول مجدداً، وإن استمرّت المشكلة تواصل معنا.
+          {error?.message || "تعذّر تحميل هذه الصفحة. حاول مجدداً."}
         </p>
-        {isDev && error.message && (
-          <pre className="mt-2 max-h-40 max-w-md overflow-auto rounded-md bg-muted p-3 text-left font-mono text-xs text-destructive">
-            {error.message}
+        {error?.stack && (
+          <pre className="mt-2 max-h-48 max-w-xl overflow-auto rounded-md bg-black/90 p-3 text-left font-mono text-xs text-red-400">
+            {error.stack}
           </pre>
         )}
         <div className="flex gap-2">
