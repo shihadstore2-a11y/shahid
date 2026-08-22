@@ -49,8 +49,8 @@ type ActiveCampaign = {
   liveHome: CampaignLiveHome | null;
 };
 
-function formatNum(n: number) {
-  return n.toLocaleString("ar-SA");
+function formatNum(n: number | null | undefined) {
+  return (n ?? 0).toLocaleString("ar-SA");
 }
 
 function campaignDoneCount(liveHome: CampaignLiveHome | null) {

@@ -1,11 +1,6 @@
 /**
  * شريط الرصيد — يظهر في رأس الداشبورد.
  * يعرض: إجمالي نقاط الفيديو (plan + topup) + حصص النص والصورة اليومية + CTA للشحن.
- *
- * متجاوب:
- * - Desktop: شريط أفقي مع تفاصيل كاملة.
- * - Tablet: نسخة مضغوطة بدون نص النص اليومي.
- * - Mobile: زر صغير يفتح Popover بالتفاصيل.
  */
 import { Link } from "@tanstack/react-router";
 import { Coins, Plus, Loader2, AlertTriangle, Info } from "lucide-react";
@@ -27,13 +22,15 @@ const PLAN_LABEL: Record<string, string> = {
   business: "أعمال",
 };
 
-function formatNum(n: number) {
-  return n.toLocaleString("ar-SA");
+function formatNum(n: number | null | undefined) {
+  return (n ?? 0).toLocaleString("ar-SA");
 }
 
-function pct(used: number, cap: number) {
-  if (!cap) return 0;
-  return Math.min(100, Math.round((used / cap) * 100));
+function pct(used: number | null | undefined, cap: number | null | undefined) {
+  const u = used ?? 0;
+  const c = cap ?? 0;
+  if (!c) return 0;
+  return Math.min(100, Math.round((u / c) * 100));
 }
 
 export function CreditsBar() {
@@ -50,13 +47,13 @@ export function CreditsBar() {
 
   if (!data) return null;
 
-  const total = data.totalCredits;
+  const total = data.totalCredits ?? 0;
   const lowCredits = total < 50;
   const textPct = pct(data.dailyTextUsed, data.dailyTextCap);
   const imagePct = pct(data.dailyImageUsed, data.dailyImageCap);
   const textNearLimit = textPct >= 80;
   const imageNearLimit = imagePct >= 80;
-  const planLabel = PLAN_LABEL[data.plan] ?? data.plan;
+  const planLabel = PLAN_LABEL[data.plan ?? "free"] ?? data.plan ?? "مجاني";
 
   // ---- Trigger (mobile/tablet/desktop) ----
   return (
@@ -155,7 +152,7 @@ export function CreditsBar() {
           <div className="flex items-start gap-1.5 rounded-md bg-muted/40 p-2 text-[10px] text-muted-foreground">
             <Info className="mt-0.5 h-3 w-3 shrink-0" />
             <span>
-              فيديو {VIDEO_QUALITY_LABELS.fast}: {data.costs.video_fast} نقطة · {VIDEO_QUALITY_LABELS.lite}: {data.costs.video_lite_8s} نقطة · {VIDEO_QUALITY_LABELS.quality}: {data.costs.video_quality_8s} نقطة
+              فيديو {VIDEO_QUALITY_LABELS.fast}: {data.costs?.video_fast ?? 1} نقطة · {VIDEO_QUALITY_LABELS.lite}: {data.costs?.video_lite_8s ?? 2} نقطة · {VIDEO_QUALITY_LABELS.quality}: {data.costs?.video_quality_8s ?? 4} نقطة
             </span>
           </div>
 
