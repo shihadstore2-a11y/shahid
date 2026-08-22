@@ -271,7 +271,10 @@ export const listCreditLedger = createServerFn({ method: "POST" })
     if (data.txnType !== "all") q = q.eq("txn_type", data.txnType);
 
     const { data: rows, error } = await q;
-    if (error) throw new Error(`فشل جلب الدفتر: ${error.message}`);
+    if (error) {
+      console.error(`listCreditLedger error: ${error.message}`);
+      return { entries: [] };
+    }
 
     const ids = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
     const { data: profs } = ids.length

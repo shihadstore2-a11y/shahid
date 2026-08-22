@@ -5,6 +5,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertAdmin } from "@/server/admin-auth";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -41,8 +42,8 @@ export const reconcileUsageLogs = createServerFn({ method: "POST" })
     const { supabase, userId } = context as { supabase: DbClient; userId: string };
     await assertAdmin(supabase, userId);
 
-    // RPC غير معرّف في types المُولّدة بعد، لذا نستخدم cast آمن
-    const { data: rows, error } = await (supabase.rpc as unknown as (
+    // RPC غير معرّف في types المُولّدة بعد، لذا نستخدم cast آمن عبر supabaseAdmin
+    const { data: rows, error } = await (supabaseAdmin.rpc as unknown as (
       fn: string,
       args: { _month: string | null }
     ) => Promise<{ data: ReconcileRow[] | null; error: { message: string } | null }>)(
@@ -50,11 +51,14 @@ export const reconcileUsageLogs = createServerFn({ method: "POST" })
       { _month: data.month ?? null }
     );
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("reconcile_usage_logs rpc error:", error.message);
+    }
 
     const list = rows ?? [];
-    const total_text_diff = list.reduce((s, r) => s + r.text_diff, 0);
-    const total_image_diff = list.reduce((s, r) => s + r.image_diff, 0);
+    const total_text_diff = list.reduce((s, r) => s + (r.text_diff ?? 0), 0);
+    const total_image_diff = list.reduce((s, r) => s + (r.image_diff ?? 0), 0);
+    
     // شهر الرياض كـ fallback (يطابق منطق الـRPC)
     const riyadhMonth = (() => {
       const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Riyadh" }));

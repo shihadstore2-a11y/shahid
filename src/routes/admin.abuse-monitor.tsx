@@ -73,11 +73,12 @@ function AbuseMonitorPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("لا توجد جلسة");
       const out = await fetchMonitor({ data: { severity, windowHours, limit: 100 }, headers: { Authorization: `Bearer ${session.access_token}` } });
-      setSignals(out.signals);
-      setStats(out.stats);
-      setGeneratedAt(out.generatedAt);
+      setSignals(out?.signals ?? []);
+      setStats(out?.stats ?? emptyStats);
+      setGeneratedAt(out?.generatedAt ?? null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل تحميل مراقبة الإساءة");
+      setSignals([]);
     } finally {
       setLoading(false);
     }
@@ -90,8 +91,9 @@ function AbuseMonitorPage() {
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return signals;
-    return signals.filter((item) =>
+    const list = signals ?? [];
+    if (!term) return list;
+    return list.filter((item) =>
       [item.user_id, item.user_email, item.user_store, item.title, item.details, item.metric, item.category]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term))

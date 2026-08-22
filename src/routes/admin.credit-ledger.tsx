@@ -110,9 +110,10 @@ function CreditLedgerPage() {
         data: { txnType: filterType as never, limit: 200 },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      setEntries(r.entries);
+      setEntries(r?.entries ?? []);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل التحميل");
+      setEntries([]);
     } finally {
       setLoading(false);
     }
@@ -150,7 +151,7 @@ function CreditLedgerPage() {
     }
   }
 
-  const filtered = entries.filter((e) => {
+  const filtered = (entries ?? []).filter((e) => {
     if (!searchUser.trim()) return true;
     const s = searchUser.toLowerCase();
     return e.user_email?.toLowerCase().includes(s) || e.user_id.toLowerCase().includes(s);

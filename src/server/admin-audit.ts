@@ -5,6 +5,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertAdmin, type DbClient } from "@/server/admin-auth";
 
 type JsonVal = string | number | boolean | null | JsonVal[] | { [k: string]: JsonVal };
@@ -42,7 +43,7 @@ export const listAdminAudit = createServerFn({ method: "POST" })
     const { supabase, userId } = context as { supabase: DbClient; userId: string };
     await assertAdmin(supabase, userId);
 
-    let q = supabase
+    let q = supabaseAdmin
       .from("admin_audit_log")
       .select(
         "id, admin_user_id, action, target_table, target_id, before_value, after_value, metadata, created_at"
@@ -56,23 +57,23 @@ export const listAdminAudit = createServerFn({ method: "POST" })
     if (data.to) q = q.lte("created_at", data.to);
 
     const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("listAdminAudit query failed:", error.message);
+      return { entries: [], facets: { actions: [], tables: [] } };
+    }
 
-    // اجلب facets منفصلة (كل القيم بدون فلتر) لإظهار خيارات في الـUI
-    const { data: facetRows, error: facetErr } = await supabase
+    const { data: facetRows } = await supabaseAdmin
       .from("admin_audit_log")
       .select("action, target_table")
       .order("created_at", { ascending: false })
       .limit(1000);
-    if (facetErr) throw new Error(facetErr.message);
 
-    const actions = Array.from(new Set((facetRows ?? []).map((r) => r.action))).sort();
-    const tables = Array.from(new Set((facetRows ?? []).map((r) => r.target_table))).sort();
+    const actions = Array.from(new Set((facetRows ?? []).map((r) => r.action))).filter(Boolean).sort();
+    const tables = Array.from(new Set((facetRows ?? []).map((r) => r.target_table))).filter(Boolean).sort();
 
-    // معرّفات الأدمن لجلب البريد
     const adminIds = Array.from(new Set((rows ?? []).map((r) => r.admin_user_id)));
     const { data: profs } = adminIds.length
-      ? await supabase.from("profiles").select("id, email").in("id", adminIds)
+      ? await supabaseAdmin.from("profiles").select("id, email").in("id", adminIds)
       : { data: [] as { id: string; email: string | null }[] };
     const emailById = new Map((profs ?? []).map((p) => [p.id, p.email]));
 

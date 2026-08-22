@@ -107,9 +107,14 @@ function AdminSubscriptionsPage() {
 
   async function loadRequests() {
     setLoading(true);
-    const { requests: rows } = await fetchRequests();
-    setRequests(rows as Req[]);
-    setLoading(false);
+    try {
+      const res = await fetchRequests();
+      setRequests((res?.requests ?? []) as Req[]);
+    } catch {
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function updateStatus(req: Req, newStatus: Req["status"], adminNotes?: string) {

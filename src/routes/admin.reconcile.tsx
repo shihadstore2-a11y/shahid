@@ -54,7 +54,7 @@ function ReconcilePage() {
   const [result, setResult] = useState<ReconcileResult | null>(null);
 
   const sortedRows = useMemo(() => {
-    if (!result) return [];
+    if (!result?.rows) return [];
     return [...result.rows].sort(
       (a, b) => Math.abs(b.text_diff) + Math.abs(b.image_diff) - (Math.abs(a.text_diff) + Math.abs(a.image_diff))
     );

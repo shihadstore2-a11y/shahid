@@ -181,8 +181,8 @@ function AdminAuditPage() {
         data: payload,
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      setEntries(result.entries);
-      setFacets(result.facets);
+      setEntries(result?.entries ?? []);
+      setFacets(result?.facets ?? { actions: [], tables: [] });
     } catch (e) {
       setError(e instanceof Error ? e.message : "تعذّر التحميل");
     } finally {
@@ -247,7 +247,7 @@ function AdminAuditPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">كل الإجراءات</SelectItem>
-                {facets.actions.map((a) => (
+                {(facets?.actions ?? []).map((a) => (
                   <SelectItem key={a} value={a}>{ACTION_LABEL[a] ?? a}</SelectItem>
                 ))}
               </SelectContent>
@@ -259,7 +259,7 @@ function AdminAuditPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">كل الجداول</SelectItem>
-                {facets.tables.map((t) => (
+                {(facets?.tables ?? []).map((t) => (
                   <SelectItem key={t} value={t}>{t}</SelectItem>
                 ))}
               </SelectContent>
