@@ -58,10 +58,11 @@ function AdminCampaignPacksPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("لا توجد جلسة");
       const out = await fetchPacks({ data: { status, limit: 200 }, headers: { Authorization: `Bearer ${session.access_token}` } });
-      setPacks(out.packs);
-      setStats(out.stats);
+      setPacks(out?.packs ?? []);
+      if (out?.stats) setStats(out.stats);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل تحميل الحملات");
+      setPacks([]);
     } finally {
       setLoading(false);
     }
@@ -74,8 +75,9 @@ function AdminCampaignPacksPage() {
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return packs;
-    return packs.filter((pack) =>
+    const list = packs ?? [];
+    if (!term) return list;
+    return list.filter((pack) =>
       [pack.product, pack.audience, pack.offer, pack.brief, pack.user_email, pack.user_store, pack.id]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(term))
@@ -95,10 +97,10 @@ function AdminCampaignPacksPage() {
       </div>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="إجمالي الحزم" value={fmt(stats.total ?? 0)} />
-        <StatCard label="مسودات" value={fmt(stats.draft ?? 0)} />
-        <StatCard label="جاهزة" value={fmt(stats.generated ?? 0)} tone="success" />
-        <StatCard label="مؤرشفة" value={fmt(stats.archived ?? 0)} />
+        <StatCard label="إجمالي الحزم" value={fmt(stats?.total ?? 0)} />
+        <StatCard label="مسودات" value={fmt(stats?.draft ?? 0)} />
+        <StatCard label="جاهزة" value={fmt(stats?.generated ?? 0)} tone="success" />
+        <StatCard label="مؤرشفة" value={fmt(stats?.archived ?? 0)} />
       </div>
 
       <div className="mb-4 flex flex-col gap-2 sm:flex-row">

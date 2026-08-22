@@ -197,23 +197,23 @@ function AdminAnalyticsPage() {
       {/* KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "إجمالي المستخدمين", value: data.totals.users.toLocaleString("ar-SA"), icon: Users, color: "text-primary" },
-          { label: "أكملوا onboarding", value: data.totals.onboarded_users.toLocaleString("ar-SA"), icon: TrendingUp, color: "text-success" },
-          { label: "مشتركين نشطين", value: data.totals.active_subscribers.toLocaleString("ar-SA"), icon: Sparkles, color: "text-gold" },
-          { label: "توليدات هذا الشهر", value: data.totals.generations_this_month.toLocaleString("ar-SA"), icon: Sparkles, color: "text-primary" },
-          { label: "كلفة هذا الشهر", value: fmtUSD(data.totals.cost_usd_this_month), icon: DollarSign, color: "text-warning" },
-          { label: "متوسط كلفة/مستخدم نشط", value: fmtUSD(data.totals.avg_cost_per_active_user), icon: DollarSign, color: "text-muted-foreground" },
+          { label: "إجمالي المستخدمين", value: (data.totals?.users ?? 0).toLocaleString("ar-SA"), icon: Users, color: "text-primary" },
+          { label: "أكملوا onboarding", value: (data.totals?.onboarded_users ?? 0).toLocaleString("ar-SA"), icon: TrendingUp, color: "text-success" },
+          { label: "مشتركين نشطين", value: (data.totals?.active_subscribers ?? 0).toLocaleString("ar-SA"), icon: Sparkles, color: "text-gold" },
+          { label: "توليدات هذا الشهر", value: (data.totals?.generations_this_month ?? 0).toLocaleString("ar-SA"), icon: Sparkles, color: "text-primary" },
+          { label: "كلفة هذا الشهر", value: fmtUSD(data.totals?.cost_usd_this_month ?? 0), icon: DollarSign, color: "text-warning" },
+          { label: "متوسط كلفة/مستخدم نشط", value: fmtUSD(data.totals?.avg_cost_per_active_user ?? 0), icon: DollarSign, color: "text-muted-foreground" },
           {
             label: "لديه واتساب",
-            value: `${data.data_quality.users_with_whatsapp.toLocaleString("ar-SA")} (${data.data_quality.whatsapp_pct}%)`,
+            value: `${(data.data_quality?.users_with_whatsapp ?? 0).toLocaleString("ar-SA")} (${data.data_quality?.whatsapp_pct ?? 0}%)`,
             icon: Phone,
-            color: data.data_quality.whatsapp_pct >= 90 ? "text-success" : data.data_quality.whatsapp_pct >= 60 ? "text-warning" : "text-destructive",
+            color: (data.data_quality?.whatsapp_pct ?? 0) >= 90 ? "text-success" : (data.data_quality?.whatsapp_pct ?? 0) >= 60 ? "text-warning" : "text-destructive",
           },
           {
             label: "ملف مكتمل بالكامل",
-            value: `${data.data_quality.users_with_full_profile.toLocaleString("ar-SA")} (${data.data_quality.full_profile_pct}%)`,
+            value: `${(data.data_quality?.users_with_full_profile ?? 0).toLocaleString("ar-SA")} (${data.data_quality?.full_profile_pct ?? 0}%)`,
             icon: UserCheck,
-            color: data.data_quality.full_profile_pct >= 80 ? "text-success" : data.data_quality.full_profile_pct >= 50 ? "text-warning" : "text-destructive",
+            color: (data.data_quality?.full_profile_pct ?? 0) >= 80 ? "text-success" : (data.data_quality?.full_profile_pct ?? 0) >= 50 ? "text-warning" : "text-destructive",
           },
         ].map((s) => (
           <div key={s.label} className="rounded-xl border border-border bg-card p-4 shadow-soft">
@@ -231,10 +231,10 @@ function AdminAnalyticsPage() {
         <h3 className="text-base font-bold">قمع التحويل</h3>
         <div className="mt-4 grid grid-cols-4 gap-2">
           {[
-            { label: "سجّل", value: data.funnel.signed_up, base: data.funnel.signed_up },
-            { label: "أكمل onboarding", value: data.funnel.onboarded, base: data.funnel.signed_up },
-            { label: "أوّل توليدة", value: data.funnel.first_generation, base: data.funnel.signed_up },
-            { label: "اشترك", value: data.funnel.paid, base: data.funnel.signed_up },
+            { label: "سجّل", value: data.funnel?.signed_up ?? 0, base: data.funnel?.signed_up ?? 0 },
+            { label: "أكمل onboarding", value: data.funnel?.onboarded ?? 0, base: data.funnel?.signed_up ?? 0 },
+            { label: "أوّل توليدة", value: data.funnel?.first_generation ?? 0, base: data.funnel?.signed_up ?? 0 },
+            { label: "اشترك", value: data.funnel?.paid ?? 0, base: data.funnel?.signed_up ?? 0 },
           ].map((step, i) => {
             const pct = step.base > 0 ? Math.round((step.value / step.base) * 100) : 0;
             return (

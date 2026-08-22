@@ -118,10 +118,11 @@ function AdminCreditsPage() {
         data: { status: filter },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      setRows(r.rows);
-      setCounts(r.counts);
+      setRows(r?.rows ?? []);
+      if (r?.counts) setCounts(r.counts);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل التحميل");
+      setRows([]);
     } finally {
       setLoading(false);
     }
@@ -192,7 +193,7 @@ function AdminCreditsPage() {
     }
   }
 
-  const filtered = rows.filter((r) => {
+  const filtered = (rows ?? []).filter((r) => {
     if (!search.trim()) return true;
     const s = search.toLowerCase();
     return (

@@ -92,10 +92,11 @@ function AdminVideoJobsPage() {
         data: { status, limit: 150 },
         headers,
       });
-      setRows(r.rows);
-      setStats(r.stats);
+      setRows(r?.rows ?? []);
+      if (r?.stats) setStats(r.stats);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل تحميل مهام الفيديو");
+      setRows([]);
     } finally {
       setLoading(false);
     }
@@ -106,7 +107,7 @@ function AdminVideoJobsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
-  const filtered = rows.filter((row) => {
+  const filtered = (rows ?? []).filter((row) => {
     if (!search.trim()) return true;
     const s = search.toLowerCase();
     return row.user_email?.toLowerCase().includes(s) || row.user_store?.toLowerCase().includes(s) || row.id.toLowerCase().includes(s) || row.prompt.toLowerCase().includes(s) || jobMeta(row.metadata).campaign_product?.toLowerCase().includes(s);
