@@ -1,21 +1,10 @@
-/**
- * AdminGuard — حارس موحّد لجميع صفحات /admin/*
- *
- * يضيف طبقتين: `adminBeforeLoad` يمنع تحميل صفحات الأدمن قبل التحقق،
- * و`AdminGuard` يحافظ على تجربة عرض نظيفة داخل الصفحة بعد التحميل.
- *
- * ⚠️ هذا الحارس واجهة فقط — الحماية الحقيقية على الـserver functions
- * عبر `requireSupabaseAuth + assertAdmin`. الهدف هنا منع flicker وتجربة
- * مستخدم نظيفة + إعادة توجيه فورية للمستخدمين غير المخوّلين.
- */
-
 import { useEffect, useState, type ReactNode } from "react";
 import { redirect, useLocation, useNavigate, type ParsedLocation } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { ShieldAlert, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-const ADMIN_AUTH_TIMEOUT_MS = 3_500;
+const ADMIN_AUTH_TIMEOUT_MS = 10_000;
 
 function authTimeout() {
   return new Promise<null>((resolve) => {
@@ -30,7 +19,16 @@ async function hasAdminRole(userId: string) {
         _user_id: userId,
         _role: "admin",
       });
-      return error ? false : data === true;
+      if (!error && data === true) return true;
+
+      // Fallback: check user_roles directly
+      const { data: roleRow } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!roleRow;
     } catch {
       return false;
     }
@@ -58,7 +56,6 @@ export async function adminBeforeLoad({ location }: { location: ParsedLocation }
 
 interface AdminGuardProps {
   children: ReactNode;
-  /** عنوان الصفحة لعرضه في رأس شاشة التحميل (اختياري) */
   loadingLabel?: string;
 }
 
@@ -73,7 +70,7 @@ export function AdminGuard({ children, loadingLabel }: AdminGuardProps) {
       setGuardTimedOut(false);
       return;
     }
-    const timer = window.setTimeout(() => setGuardTimedOut(true), ADMIN_AUTH_TIMEOUT_MS + 1_000);
+    const timer = window.setTimeout(() => setGuardTimedOut(true), ADMIN_AUTH_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
   }, [loading, isAdmin]);
 
@@ -91,21 +88,19 @@ export function AdminGuard({ children, loadingLabel }: AdminGuardProps) {
     }
   }, [user, isAdmin, loading, guardTimedOut, navigate, location.pathname, location.searchStr, location.hash]);
 
-  // ---- حالة التحميل/عدم الحسم ----
   if (loading || isAdmin === null) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">
         <div className="flex flex-col items-center gap-3 text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">
-            {guardTimedOut ? "لم يُحسم التحقق بعد؛ ستتم إعادتك لمسار آمن…" : loadingLabel ?? "جاري التحقق من الصلاحيات…"}
+            {guardTimedOut ? "لم يُحسم التحقق بعد؛ جاري إعادة التوجيه…" : loadingLabel ?? "جاري التحقق من الصلاحيات…"}
           </p>
         </div>
       </div>
     );
   }
 
-  // ---- مستخدم غير مخوَّل ----
   if (!user || isAdmin === false) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">

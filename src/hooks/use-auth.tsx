@@ -50,7 +50,7 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-const AUTH_TIMEOUT_MS = 3_500;
+const AUTH_TIMEOUT_MS = 10_000;
 
 function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -64,8 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // يحتفظ بآخر userId تم تحميل بياناته، حتى لا نُكرّر استعلامات profiles + user_roles
-  // عندما يُطلِق Supabase أحداث متعدّدة (INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED…)
-  // أو عند إعادة التهيئة في React StrictMode.
   const loadedUserIdRef = useRef<string | null>(null);
 
   const loadProfile = async (userId: string) => {
@@ -78,17 +76,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loadIsAdmin = async (userId: string) => {
-    const { data, error } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    setIsAdmin(error ? false : data === true);
+    try {
+      const { data, error } = await supabase.rpc("has_role", {
+        _user_id: userId,
+        _role: "admin",
+      });
+      if (!error && data === true) {
+        setIsAdmin(true);
+        return;
+      }
+      const { data: roleRow } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!roleRow);
+    } catch {
+      setIsAdmin(false);
+    }
   };
 
   const loadUserData = async (userId: string, force = false) => {
     if (!force && loadedUserIdRef.current === userId) return;
     loadedUserIdRef.current = userId;
-    // نشغّل البروفايل والدور بالتوازي — استعلامان فقط لكل جلسة بدلاً من تكرارهما في كل مكوّن.
     await Promise.race([
       Promise.allSettled([loadProfile(userId), loadIsAdmin(userId)]),
       wait(AUTH_TIMEOUT_MS),
