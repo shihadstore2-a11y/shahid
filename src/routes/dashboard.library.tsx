@@ -71,7 +71,7 @@ function LibraryPage() {
       if (session) {
         try {
           const out = await listVideoJobsFn({ headers: { Authorization: `Bearer ${session.access_token}` } });
-          setVideoJobs(out.jobs);
+          setVideoJobs(out?.jobs ?? []);
         } catch {
           setVideoJobs([]);
           toast.error("تعذر تحميل الفيديوهات مؤقتاً");
@@ -92,13 +92,13 @@ function LibraryPage() {
   }, [authLoading, load, user]);
 
   const toggleFav = async (id: string, current: boolean) => {
-    setItems((s) => s.map((i) => (i.id === id ? { ...i, is_favorite: !current } : i)));
+    setItems((s) => (s ?? []).map((i) => (i.id === id ? { ...i, is_favorite: !current } : i)));
     const { error } = await supabase
       .from("generations")
       .update({ is_favorite: !current })
       .eq("id", id);
     if (error) {
-      setItems((s) => s.map((i) => (i.id === id ? { ...i, is_favorite: current } : i)));
+      setItems((s) => (s ?? []).map((i) => (i.id === id ? { ...i, is_favorite: current } : i)));
       toast.error("فشل التحديث");
     }
   };
@@ -106,7 +106,7 @@ function LibraryPage() {
   const remove = async (id: string) => {
     if (!confirm("متأكد من الحذف؟")) return;
     const prev = items;
-    setItems((s) => s.filter((i) => i.id !== id));
+    setItems((s) => (s ?? []).filter((i) => i.id !== id));
     const { error } = await supabase.from("generations").delete().eq("id", id);
     if (error) {
       setItems(prev);
@@ -122,8 +122,10 @@ function LibraryPage() {
     setRefreshingJobId(jobId);
     try {
       const out = await refreshVideoJobFn({ data: { jobId }, headers: { Authorization: `Bearer ${session.access_token}` } });
-      setVideoJobs((jobs) => jobs.map((job) => (job.id === out.job.id ? out.job : job)));
-      toast.success(out.job.status === "completed" ? "اكتمل الفيديو" : "تم تحديث الحالة");
+      if (out?.job) {
+        setVideoJobs((jobs) => (jobs ?? []).map((job) => (job.id === out.job.id ? out.job : job)));
+        toast.success(out.job.status === "completed" ? "اكتمل الفيديو" : "تم تحديث الحالة");
+      }
     } catch {
       toast.error("تعذر تحديث حالة الفيديو مؤقتاً");
     } finally {
@@ -132,35 +134,40 @@ function LibraryPage() {
   };
 
   useEffect(() => {
-    if (authLoading || !user || !videoJobs.some((job) => ACTIVE_VIDEO_STATUSES.has(job.status))) return;
+    const safeJobs = Array.isArray(videoJobs) ? videoJobs : [];
+    if (authLoading || !user || !safeJobs.some((job) => ACTIVE_VIDEO_STATUSES.has(job.status))) return;
     const id = window.setInterval(async () => {
       if (document.visibilityState !== "visible") return;
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const processingJobs = videoJobs.filter((job) => ACTIVE_VIDEO_STATUSES.has(job.status)).slice(0, 2);
+      const processingJobs = safeJobs.filter((job) => ACTIVE_VIDEO_STATUSES.has(job.status)).slice(0, 2);
       await Promise.allSettled(processingJobs.map(async (job) => {
         const out = await refreshVideoJobFn({ data: { jobId: job.id }, headers: { Authorization: `Bearer ${session.access_token}` } });
-        setVideoJobs((jobs) => jobs.map((current) => (current.id === out.job.id ? out.job : current)));
+        if (out?.job) {
+          setVideoJobs((jobs) => (jobs ?? []).map((current) => (current.id === out.job.id ? out.job : current)));
+        }
       }));
     }, 15_000);
     return () => window.clearInterval(id);
   }, [authLoading, user, videoJobs, refreshVideoJobFn]);
 
-  const scopedItems = search.campaignId ? items.filter((item) => campaignKey(item.metadata) === search.campaignId) : items;
-  const scopedVideoJobs = search.campaignId ? videoJobs.filter((job) => campaignKey((job.metadata as Record<string, unknown> | null) ?? null) === search.campaignId) : videoJobs;
+  const safeItems = Array.isArray(items) ? items : [];
+  const safeVideoJobs = Array.isArray(videoJobs) ? videoJobs : [];
+  const scopedItems = search.campaignId ? safeItems.filter((item) => campaignKey(item?.metadata) === search.campaignId) : safeItems;
+  const scopedVideoJobs = search.campaignId ? safeVideoJobs.filter((job) => campaignKey((job?.metadata as Record<string, unknown> | null) ?? null) === search.campaignId) : safeVideoJobs;
   const filtered = scopedItems.filter((i) => {
     if (filter === "all") return true;
-    if (filter === "fav") return i.is_favorite;
+    if (filter === "fav") return Boolean(i?.is_favorite);
     if (filter === "video") return false;
-    if (filter === "text") return i.type === "text";
-    if (filter === "image") return i.type === "image" || i.type === "image_enhance";
+    if (filter === "text") return i?.type === "text";
+    if (filter === "image") return i?.type === "image" || i?.type === "image_enhance";
     return true;
   });
 
-  const textCount = scopedItems.filter((item) => item.type === "text").length;
-  const imageCount = scopedItems.filter((item) => item.type === "image" || item.type === "image_enhance").length;
-  const favoriteCount = scopedItems.filter((item) => item.is_favorite).length;
-  const campaignGroups = buildCampaignGroups(items, videoJobs);
+  const textCount = scopedItems.filter((item) => item?.type === "text").length;
+  const imageCount = scopedItems.filter((item) => item?.type === "image" || item?.type === "image_enhance").length;
+  const favoriteCount = scopedItems.filter((item) => Boolean(item?.is_favorite)).length;
+  const campaignGroups = buildCampaignGroups(safeItems, safeVideoJobs);
   const visibleCampaignGroups = search.campaignId ? campaignGroups.filter((group) => group.id === search.campaignId) : campaignGroups;
   const campaignItemCount = campaignGroups.reduce((total, group) => total + group.text + group.image + group.video, 0);
   const completedCampaignCount = visibleCampaignGroups.filter((group) => group.completedSlots === 3).length;
@@ -335,7 +342,7 @@ function campaignKey(metadata: unknown) {
   return meta?.campaignId ?? meta?.campaignPackId ?? meta?.campaign_pack_id ?? "";
 }
 
-function buildCampaignGroups(items: Generation[], videoJobs: VideoJob[]) {
+function buildCampaignGroups(items: Generation[] = [], videoJobs: VideoJob[] = []) {
   const groups = new Map<string, { id: string; name: string; goal?: string; channel?: string; text: number; image: number; video: number; completedVideo: number; completedSlots: number; completionPercent: number }>();
   const ensure = (id: string, metadata: Generation["metadata"] | Record<string, unknown> | null) => {
     const meta = metadata ?? {};
@@ -343,20 +350,22 @@ function buildCampaignGroups(items: Generation[], videoJobs: VideoJob[]) {
     if (!groups.has(id)) groups.set(id, { id, name, goal: typeof meta.campaign_goal === "string" ? meta.campaign_goal : undefined, channel: typeof meta.campaign_channel === "string" ? meta.campaign_channel : undefined, text: 0, image: 0, video: 0, completedVideo: 0, completedSlots: 0, completionPercent: 0 });
     return groups.get(id)!;
   };
-  for (const item of items) {
-    const id = campaignKey(item.metadata);
+  const safeItems = Array.isArray(items) ? items : [];
+  for (const item of safeItems) {
+    const id = campaignKey(item?.metadata);
     if (!id) continue;
-    const group = ensure(id, item.metadata);
-    if (item.type === "text") group.text += 1;
+    const group = ensure(id, item?.metadata ?? null);
+    if (item?.type === "text") group.text += 1;
     else group.image += 1;
   }
-  for (const job of videoJobs) {
-    const metadata = (job.metadata as Record<string, unknown> | null) ?? null;
+  const safeJobs = Array.isArray(videoJobs) ? videoJobs : [];
+  for (const job of safeJobs) {
+    const metadata = (job?.metadata as Record<string, unknown> | null) ?? null;
     const id = campaignKey(metadata);
     if (!id) continue;
     const group = ensure(id, metadata);
     group.video += 1;
-    if (job.status === "completed" && job.result_url) group.completedVideo += 1;
+    if (job?.status === "completed" && job?.result_url) group.completedVideo += 1;
   }
   return Array.from(groups.values()).map((group) => {
     const completedSlots = Number(group.text > 0) + Number(group.image > 0) + Number(group.completedVideo > 0);

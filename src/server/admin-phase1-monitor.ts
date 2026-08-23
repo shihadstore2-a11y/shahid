@@ -13,6 +13,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdmin, type DbClient } from "@/server/admin-auth";
+import { supabaseAdmin } from "@/integrations/supabase/admin";
 
 export type Phase1Monitor = {
   generated_at: string;
@@ -102,7 +103,7 @@ export const getPhase1Monitor = createServerFn({ method: "POST" })
     const { supabase, userId } = context as { supabase: DbClient; userId: string };
     await assertAdmin(supabase, userId);
 
-    const adb = supabase as unknown as {
+    const adb = supabaseAdmin as unknown as {
       from: (t: string) => any;
       rpc: (name: string, params?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
     };

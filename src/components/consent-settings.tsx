@@ -131,7 +131,7 @@ export function ConsentSettings() {
       ) : status ? (
         <ul className="divide-y divide-border">
           {ROWS.map((row) => {
-            const item = status[row.type];
+            const item = status?.[row.type] ?? { given: false, last_updated: null, source: "default", version: "v1" };
             const switchId = `consent-switch-${row.type}`;
             return (
               <li
@@ -154,7 +154,7 @@ export function ConsentSettings() {
                 </div>
                 <Switch
                   id={switchId}
-                  checked={item.given}
+                  checked={Boolean(item.given)}
                   onCheckedChange={(v) => void handleToggle(row.type, v)}
                   disabled={savingType !== null}
                   aria-label={row.title}

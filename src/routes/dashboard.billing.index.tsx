@@ -278,9 +278,8 @@ function BillingPage() {
                     {p.badge && <Badge className="text-[10px]">{p.badge}</Badge>}
                   </div>
                   <div className="mt-2 text-2xl font-extrabold">{p.monthlyPriceSar} <span className="text-xs font-normal text-muted-foreground">ر.س</span></div>
-                  <div className="mt-1 text-xs text-primary">{formatPlanNumber(p.monthlyCredits)} نقطة فيديو</div>
-                  <div className="mt-1 text-[11px] font-semibold text-foreground">{PLAN_PURCHASE_GUIDE[p.id as PaidPlanId].fit}</div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">{PLAN_PURCHASE_GUIDE[p.id as PaidPlanId].capability}</div>
+                  <div className="mt-1 text-[11px] font-semibold text-foreground">{PLAN_PURCHASE_GUIDE[p.id as PaidPlanId]?.fit ?? ""}</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">{PLAN_PURCHASE_GUIDE[p.id as PaidPlanId]?.capability ?? ""}</div>
                 </button>
               ))}
             </div>
