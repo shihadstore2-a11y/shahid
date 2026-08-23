@@ -13,7 +13,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdmin, type DbClient } from "@/server/admin-auth";
-import { supabaseAdmin } from "@/integrations/supabase/admin";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type Phase1Monitor = {
   generated_at: string;

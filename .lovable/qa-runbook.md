@@ -283,7 +283,7 @@
 | **Lovable Cloud Linter** | ✅ 0 issues | لا أخطاء أو تحذيرات أمنية |
 | **Cron Jobs النشطة** | ✅ 6 jobs | `process-email-queue` (5s), `check-email-dlq` (10m), `daily-domain-scan` (6 ص), `rifd-onboarding-emails-daily` (6 ص), `check-stale-subscriptions` (9 ص), `send-expiring-subscription-reminders` (9 ص) |
 | **طوابير البريد الفعلية** | ✅ 0 pending | trans_pending=0, auth_pending=0 |
-| **DLQ** | ⚠️ 2 رسائل قديمة | رسالتا welcome من قبل تأكيد النطاق (`saalla012@gmail.com`, `a6439875542@gmail.com`) — يمكن تجاهلها أو إعادة إرسالها يدوياً |
+| **DLQ** | ⚠️ 2 رسائل قديمة | رسالتا welcome من قبل تأكيد النطاق (`digitaneo@gmail.com`, `a6439875542@gmail.com`) — يمكن تجاهلها أو إعادة إرسالها يدوياً |
 | **Recovery emails (آخر ساعة)** | ✅ 4 رسائل تُعالج | كلها بحالة `pending` تنتظر cron (تأكدنا أن المستخدم استلمها) |
 | **مسارات الإدارة** | ✅ 9 مسارات محمية | جميعها تستخدم `<AdminGuard>` أو `requireSupabaseAuth` + `has_role` |
 | **Triggers الحماية** | ✅ نشطة | `trg_enforce_generation_integrity`, `trg_protect_profile_plan_change`, `trg_enforce_video_processing_limit`, وتريجرات تفعيل الاشتراك دون تكرار |
