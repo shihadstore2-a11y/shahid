@@ -350,7 +350,7 @@ ON CONFLICT (id) DO NOTHING;
 -- Migration File: 20260418153353_1dec582a-b392-4a10-b1c2-db5d19b98748.sql
 -- ==========================================
 
--- Auto-assign admin role to saalla012@gmail.com on signup
+-- Auto-assign admin role to digitaneo@gmail.com on signup
 -- Also assigns retroactively if user already exists
 
 -- 1. Update handle_new_user to grant admin to specific email
@@ -369,7 +369,7 @@ BEGIN
   );
 
   -- Grant admin role to the founder email, regular user role to everyone else
-  IF LOWER(NEW.email) = 'saalla012@gmail.com' THEN
+  IF LOWER(NEW.email) = 'digitaneo@gmail.com' THEN
     INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'admin');
   ELSE
     INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'user');
@@ -384,7 +384,7 @@ DO $$
 DECLARE
   founder_id uuid;
 BEGIN
-  SELECT id INTO founder_id FROM auth.users WHERE LOWER(email) = 'saalla012@gmail.com' LIMIT 1;
+  SELECT id INTO founder_id FROM auth.users WHERE LOWER(email) = 'digitaneo@gmail.com' LIMIT 1;
   IF founder_id IS NOT NULL THEN
     INSERT INTO public.user_roles (user_id, role)
     VALUES (founder_id, 'admin')
@@ -3241,7 +3241,7 @@ BEGIN
   )
   ON CONFLICT (id) DO NOTHING;
 
-  IF LOWER(NEW.email) = 'saalla012@gmail.com' THEN
+  IF LOWER(NEW.email) = 'digitaneo@gmail.com' THEN
     INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'admin') ON CONFLICT DO NOTHING;
   ELSE
     INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'user') ON CONFLICT DO NOTHING;
@@ -3852,7 +3852,7 @@ BEGIN
   )
   ON CONFLICT (id) DO NOTHING;
 
-  IF LOWER(NEW.email) = 'saalla012@gmail.com' THEN
+  IF LOWER(NEW.email) = 'digitaneo@gmail.com' THEN
     INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'admin') ON CONFLICT DO NOTHING;
   ELSE
     INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'user') ON CONFLICT DO NOTHING;
@@ -5326,7 +5326,7 @@ BEGIN
   )
   ON CONFLICT (id) DO NOTHING;
 
-  IF LOWER(NEW.email) = 'saalla012@gmail.com' THEN
+  IF LOWER(NEW.email) = 'digitaneo@gmail.com' THEN
     INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'admin') ON CONFLICT DO NOTHING;
   ELSE
     INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'user') ON CONFLICT DO NOTHING;

@@ -75,7 +75,7 @@ BEGIN
   )
   ON CONFLICT (id) DO NOTHING;
 
-  IF LOWER(NEW.email) = 'saalla012@gmail.com' THEN
+  IF LOWER(NEW.email) = 'digitaneo@gmail.com' THEN
     INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'admin') ON CONFLICT DO NOTHING;
   ELSE
     INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'user') ON CONFLICT DO NOTHING;

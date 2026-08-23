@@ -89,7 +89,7 @@
 2. **معدل refund الفيديو مرتفع**: قراءات سابقة 27-43% — تحقق من `/admin/video-jobs` و`credit_ledger` (txn_type='refund').
 3. **3 طلبات اشتراك Pro منتهية**: في `subscription_requests` بحالة `pending` تجاوزت 24 ساعة — راجع `/admin/subscriptions`.
 4. **تكاليف AI تقديرية**: `src/server/cost.ts` يحوي تقديرات داخلية—لا يوجد ربط مباشر بـ Lovable AI Gateway pricing API. تحقق من مدى دقتها.
-5. **حساب الأدمن الوحيد قبل الآن**: `saalla012@gmail.com` (مذكور في `handle_new_user` trigger كـ hardcoded admin) — راجع لو هذا مقبول.
+5. **حساب الأدمن الوحيد قبل الآن**: `digitaneo@gmail.com` (مذكور في `handle_new_user` trigger كـ hardcoded admin) — راجع لو هذا مقبول.
 
 ### اكتشف بنفسك
 - **RLS coverage**: هل كل الجداول الحساسة محمية؟ (راجع 31 جدول في schema)

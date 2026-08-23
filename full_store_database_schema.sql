@@ -2760,7 +2760,7 @@ CREATE INDEX IF NOT EXISTS idx_unsubscribe_tokens_token ON public.email_unsubscr
 DO $$
 DECLARE
   test_emails text[] := ARRAY[
-    'saalla012@gmail.com',
+    'digitaneo@gmail.com',
     'elbhery878@gmail.com',
     'ahmedtest-h4-1@test.com',
     'ahmedtest-h4-2@test.com',
