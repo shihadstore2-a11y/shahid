@@ -190,7 +190,7 @@ function GenerateVideoPage() {
   const canonicalGenerationPersonaId = mediumTestCanonicalSample?.personaId ?? selectedPersonaId;
   const canonicalGenerationPersona = PERSONAS.find((persona) => persona.id === canonicalGenerationPersonaId) ?? selectedPersona;
   const canonicalCostKey = (canonicalGenerationQuality === "quality" ? "video_quality_8s" : canonicalGenerationQuality === "lite" ? "video_lite_8s" : "video_fast") as keyof NonNullable<typeof credits>["costs"];
-  const canonicalSelectedCost = credits?.costs[canonicalCostKey] ?? 0;
+  const canonicalSelectedCost = credits?.costs?.[canonicalCostKey] ?? (canonicalCostKey === "video_quality_8s" ? 4 : canonicalCostKey === "video_lite_8s" ? 2 : 1);
   const canonicalQualityAllowed = canonicalGenerationQuality === "quality" ? (credits?.videoQualityAllowed ?? true) : (credits?.videoFastAllowed ?? true);
   const canonicalDurationAllowed = canonicalGenerationDurationSeconds <= (credits?.maxVideoDurationSeconds ?? 8);
   const canonicalHasEnoughCredits = credits ? credits.totalCredits >= canonicalSelectedCost : true;
@@ -464,7 +464,7 @@ function GenerateVideoPage() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-extrabold">{option.label}</span>
                       <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold">
-                        {(credits?.costs[key === "quality" ? "video_quality_8s" : key === "lite" ? "video_lite_8s" : "video_fast"] ?? 0).toLocaleString("ar-SA")} نقطة · {key === "fast" ? "من 5ث" : "8ث"}
+                        {(credits?.costs?.[key === "quality" ? "video_quality_8s" : key === "lite" ? "video_lite_8s" : "video_fast"] ?? (key === "quality" ? 4 : key === "lite" ? 2 : 1)).toLocaleString("ar-SA")} نقطة · {key === "fast" ? "من 5ث" : "8ث"}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">{option.note}</p>
