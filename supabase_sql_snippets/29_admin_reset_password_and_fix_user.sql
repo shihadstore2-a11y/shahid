@@ -40,27 +40,58 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'البريد أو كلمة المرور غير صالحة (6 أحرف على الأقل)');
   END IF;
 
-  -- ب. جلب معرّف المستخدم
+  -- ب. جلب أو إنشاء معرّف المستخدم
   SELECT id INTO v_user_id FROM auth.users WHERE LOWER(email) = _target_email;
 
-  IF v_user_id IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'المستخدم غير موجود في سجلات المصادقة');
-  END IF;
-
-  -- ج. تشفير كلمة المرور وتحديث المستخدم
+  -- تشفير كلمة المرور
   v_encrypted_pw := crypt(_new_password, gen_salt('bf'));
 
-  UPDATE auth.users
-  SET 
-    encrypted_password = v_encrypted_pw,
-    email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
-    banned_until = NULL,
-    confirmation_token = '',
-    recovery_token = '',
-    updated_at = NOW()
-  WHERE id = v_user_id;
+  IF v_user_id IS NULL THEN
+    -- المستخدم غير موجود في المصادقة -> نقوم بإنشائه فوراً
+    v_user_id := gen_random_uuid();
 
-  -- د. التأكد من وجود سجل الهوية في auth.identities
+    INSERT INTO auth.users (
+      instance_id,
+      id,
+      aud,
+      role,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      created_at,
+      updated_at,
+      confirmation_token
+    )
+    VALUES (
+      '00000000-0000-0000-0000-000000000000',
+      v_user_id,
+      'authenticated',
+      'authenticated',
+      _target_email,
+      v_encrypted_pw,
+      NOW(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      jsonb_build_object('role', 'staff'),
+      NOW(),
+      NOW(),
+      encode(gen_random_bytes(32), 'hex')
+    );
+  ELSE
+    -- المستخدم موجود -> تحديث كلمة المرور وتأكيد البريد
+    UPDATE auth.users
+    SET 
+      encrypted_password = v_encrypted_pw,
+      email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+      banned_until = NULL,
+      confirmation_token = '',
+      recovery_token = '',
+      updated_at = NOW()
+    WHERE id = v_user_id;
+  END IF;
+
+  -- ج. التأكد من وجود سجل الهوية في auth.identities
   IF NOT EXISTS (SELECT 1 FROM auth.identities WHERE user_id = v_user_id AND provider = 'email') THEN
     INSERT INTO auth.identities (
       id,
@@ -85,12 +116,21 @@ BEGIN
         updated_at = NOW();
   END IF;
 
-  -- هـ. تفعيل المشرف في جدول admin_users إن وجد
+  -- د. تفعيل وربط المشرف في جدول admin_users
   UPDATE public.admin_users
-  SET is_active = true, updated_at = NOW()
-  WHERE user_id = v_user_id OR LOWER(email) = _target_email;
+  SET 
+    user_id = v_user_id,
+    is_active = true,
+    updated_at = NOW()
+  WHERE LOWER(email) = _target_email OR user_id = v_user_id;
 
-  RETURN jsonb_build_object('success', true, 'message', 'تم تحديث كلمة المرور وتفعيل الحساب بنجاح');
+  -- هـ. مزامنة جدول profiles
+  INSERT INTO public.profiles (id, user_id, email, updated_at)
+  VALUES (v_user_id, v_user_id, _target_email, NOW())
+  ON CONFLICT (user_id) DO UPDATE
+  SET email = _target_email, updated_at = NOW();
+
+  RETURN jsonb_build_object('success', true, 'message', 'تم تعيين كلمة المرور وتفعيل الحساب بنجاح');
 END;
 $$;
 
