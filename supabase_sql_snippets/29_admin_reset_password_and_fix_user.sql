@@ -96,6 +96,7 @@ BEGIN
     INSERT INTO auth.identities (
       id,
       user_id,
+      provider_id,
       identity_data,
       provider,
       last_sign_in_at,
@@ -103,17 +104,16 @@ BEGIN
       updated_at
     )
     VALUES (
-      v_user_id::text,
+      gen_random_uuid(),
       v_user_id,
-      jsonb_build_object('sub', v_user_id::text, 'email', _target_email),
+      v_user_id::text,
+      jsonb_build_object('sub', v_user_id::text, 'email', _target_email, 'email_verified', true),
       'email',
       NOW(),
       NOW(),
       NOW()
     )
-    ON CONFLICT (provider, id) DO UPDATE 
-    SET identity_data = jsonb_build_object('sub', v_user_id::text, 'email', _target_email),
-        updated_at = NOW();
+    ON CONFLICT DO NOTHING;
   END IF;
 
   -- د. تفعيل وربط المشرف في جدول admin_users
@@ -143,11 +143,12 @@ UPDATE auth.users
 SET email_confirmed_at = NOW()
 WHERE email_confirmed_at IS NULL;
 
-INSERT INTO auth.identities (id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+INSERT INTO auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
 SELECT 
-  u.id::text,
+  gen_random_uuid(),
   u.id,
-  jsonb_build_object('sub', u.id::text, 'email', u.email),
+  u.id::text,
+  jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true),
   'email',
   NOW(),
   NOW(),

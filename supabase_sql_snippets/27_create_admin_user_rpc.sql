@@ -92,6 +92,7 @@ BEGIN
       INSERT INTO auth.identities (
         id,
         user_id,
+        provider_id,
         identity_data,
         provider,
         last_sign_in_at,
@@ -99,9 +100,10 @@ BEGIN
         updated_at
       )
       VALUES (
-        v_user_id::text,
+        gen_random_uuid(),
         v_user_id,
-        jsonb_build_object('sub', v_user_id::text, 'email', _email),
+        v_user_id::text,
+        jsonb_build_object('sub', v_user_id::text, 'email', _email, 'email_verified', true),
         'email',
         NOW(),
         NOW(),
