@@ -117,3 +117,7 @@ WHERE NOT EXISTS (
   SELECT 1 FROM auth.identities i WHERE i.user_id = u.id AND i.provider = 'email'
 )
 ON CONFLICT DO NOTHING;
+
+-- 3. تحديث Schema Cache الخاص بـ PostgREST فوراً
+NOTIFY pgrst, 'reload schema';
+
