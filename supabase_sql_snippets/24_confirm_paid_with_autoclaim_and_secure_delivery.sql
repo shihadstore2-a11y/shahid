@@ -79,7 +79,8 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.confirm_order_paid(UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.confirm_order_paid(UUID) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.confirm_order_paid(UUID) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.claim_subscription_for_order(UUID) TO anon, authenticated, service_role;
 
 COMMENT ON FUNCTION public.confirm_order_paid(UUID) IS
   '24 (Aug 2026): Payment confirmation + auto-claim inventory. If stock -> fulfilled immediately, else -> paid for manual delivery.';
