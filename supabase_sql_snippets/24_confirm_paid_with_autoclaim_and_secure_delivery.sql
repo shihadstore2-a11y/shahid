@@ -22,10 +22,10 @@ DECLARE
   v_claim JSONB;
   v_final_status text;
 BEGIN
-  -- 1. Try to mark order as paid (only from pending/failed states)
+  -- 1. Try to mark order as paid (only from pending/initiated/failed/payment_failed states)
   UPDATE public.orders
   SET status = 'paid', updated_at = NOW()
-  WHERE id = _order_id AND status IN ('pending', 'failed')
+  WHERE id = _order_id AND status IN ('pending', 'initiated', 'failed', 'payment_failed')
   RETURNING id, order_number, total, customer_name, customer_phone, customer_email, status INTO v_order;
 
   -- Idempotent: order already paid or fulfilled
