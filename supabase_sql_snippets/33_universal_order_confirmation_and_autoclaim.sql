@@ -18,8 +18,12 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
+-- 2. إزالة أي تريجرات تقييد مسببة لرفض إدراج الطلبات
+DROP TRIGGER IF EXISTS enforce_order_rate_limit ON public.orders;
+DROP FUNCTION IF EXISTS public.check_order_rate_limit();
 
--- 2. دالة الصرف الذكي للاشتراكات من المخزون لكافة أنواع المنتجات
+
+-- 3. دالة الصرف الذكي للاشتراكات من المخزون لكافة أنواع المنتجات
 CREATE OR REPLACE FUNCTION public.claim_subscription_for_order(_order_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
