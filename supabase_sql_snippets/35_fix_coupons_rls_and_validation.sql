@@ -2,16 +2,18 @@
 -- 35: Fix Coupons Permissions, RLS & Secure Validation Function
 -- ===================================================================
 
--- 1. التأكد من وجود جدول الكوبونات
+-- 1. التأكد من وجود جدول الكوبونات وإضافة كافة الأعمدة المطلوبة
 CREATE TABLE IF NOT EXISTS public.coupons (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code TEXT UNIQUE NOT NULL,
   discount_percent INT NOT NULL DEFAULT 0,
-  valid_until TIMESTAMPTZ,
-  applies_to_duration_min INT NOT NULL DEFAULT 0,
-  is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS discount_percent INT NOT NULL DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS valid_until TIMESTAMPTZ;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS applies_to_duration_min INT NOT NULL DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;
 
 -- 2. منح الصلاحيات الأساسية على الجدول للجميع (حاسم لمنع خطأ permission denied)
 GRANT SELECT ON public.coupons TO anon, authenticated, service_role;
